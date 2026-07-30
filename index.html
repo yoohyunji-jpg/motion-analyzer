@@ -99,7 +99,7 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
 <body>
 
 <div id="hdr">
-  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m2</b></small></div>
+  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m3</b></small></div>
   <div id="stepInd">1 / 4</div>
 </div>
 
@@ -210,7 +210,8 @@ let bodyPts={};                    // 몸 포인트 {key:{nx,ny}} 정규화
 // ── 동작 분석: A·B·A′ 3프레임 ──
 const PHASES=['A','B','A2'];       // A2 = A′
 const PHASE_LABEL={A:'A · 시작 (다리 편)', B:'B · 목표 (다리 구부린)', A2:"A′ · 복귀 (다리 편)"};
-let phaseIdx=0;                     // 현재 캡처 중인 페이즈
+let phaseIdx=0;                    // 현재 캡처 중인 페이즈
+let calibPhaseIdx=0;               // 몸 포인트 보정 중인 페이즈
 const captured={A:null, B:null, A2:null};  // {frameImg, corners, bodyPts, metrics}
 function curPhase(){ return PHASES[phaseIdx]; }
 let selChip=null;
@@ -246,7 +247,7 @@ $('file').addEventListener('change', async e=>{
     load(false);
     setupScrub();
     // 동작 분석: 페이즈 초기화
-    phaseIdx=0; captured.A=null; captured.B=null; captured.A2=null;
+    phaseIdx=0; calibPhaseIdx=0; captured.A=null; captured.B=null; captured.A2=null;
     corners=[]; bodyPts={}; selChip=null;
     updatePhaseUI();
     go(2);
@@ -292,16 +293,36 @@ function drawFrameToCanvas(canvas,ctx){
   ctx.drawImage(V,0,0,canvas.width,canvas.height);
 }
 $('toCalib').onclick = ()=>{
-  // STEP2에서 이미 화면에 그려진 cv(프레임)를 그대로 복사 → 검은 화면 방지
+  // 현재 프레임을 이미지로 고정해 현재 페이즈에 저장
   if(!cv.width || !cv.height){ alert('프레임을 먼저 선택하세요.'); return; }
-  frameImg=document.createElement('canvas');
-  frameImg.width=cv.width; frameImg.height=cv.height;
-  frameImg.getContext('2d').drawImage(cv,0,0);
+  const img=document.createElement('canvas');
+  img.width=cv.width; img.height=cv.height;
+  img.getContext('2d').drawImage(cv,0,0);
+  const ph=curPhase();
+  captured[ph]={ frameImg:img, corners:null, bodyPts:null, metrics:null };
+
+  if(phaseIdx < PHASES.length-1){
+    // 다음 프레임 찾기
+    phaseIdx++;
+    updatePhaseUI();
+    // 슬라이더 위치 유지, 다음 프레임 그리기 대기
+    go(2);
+  }else{
+    // 3개 프레임 다 모임 → 기구 4점 보정 시작 (A 프레임 위에서)
+    startCalibration();
+  }
+};
+$('backTo1').onclick = ()=>go(1);
+
+/* ── 프레임 3개 다 모은 뒤: 기구 4점 → 각 프레임 몸 보정 ── */
+function startCalibration(){
+  // 기구 4점은 A 프레임에서 한 번만
+  calibPhaseIdx=0;
+  frameImg=captured.A.frameImg;
   corners=[]; bodyPts={}; selChip=null;
   enterCalib();
   go(3);
-};
-$('backTo1').onclick = ()=>go(1);
+}
 
 /* ── STEP 3: 보정 ── */
 const cv2=$('cv2'), cx2=cv2.getContext('2d');
@@ -428,6 +449,7 @@ $('calibNext').onclick = async ()=>{
     $('chips').style.display='flex'; renderChips();
     $('calibNext').style.display='none';
     $('runAnalyze').style.display='block';
+    $('runAnalyze').textContent='B 몸 보정 →';   // A 다음은 B
     drawCalib();
   }
 };
@@ -475,35 +497,57 @@ $('backTo2').onclick = ()=>go(2);
 
 /* ── 보정 완료 → 현재 페이즈 저장 → 다음 or 결과 ── */
 $('runAnalyze').onclick = ()=>{
-  const metrics=computeMetrics();
-  // 현재 페이즈 저장 (프레임·보정·지표 스냅샷)
-  const ph=curPhase();
-  captured[ph]={
-    frameImg, corners:JSON.parse(JSON.stringify(corners)),
-    bodyPts:JSON.parse(JSON.stringify(bodyPts)), metrics,
-  };
-  if(phaseIdx < PHASES.length-1){
-    // 다음 페이즈 프레임 선택으로
-    phaseIdx++;
-    corners=[]; bodyPts={}; selChip=null; frameImg=null;
-    updatePhaseUI();
-    go(2);
+  // 현재 보정 중인 페이즈에 corners(공유)+몸포인트 저장
+  const ph=PHASES[calibPhaseIdx];
+  captured[ph].corners=JSON.parse(JSON.stringify(corners));
+  captured[ph].bodyPts=JSON.parse(JSON.stringify(bodyPts));
+  captured[ph].metrics=computeMetrics();
+
+  if(calibPhaseIdx < PHASES.length-1){
+    // 다음 페이즈 몸 포인트 보정 (기구 4점은 그대로 재사용)
+    calibPhaseIdx++;
+    const np=PHASES[calibPhaseIdx];
+    frameImg=captured[np].frameImg;
+    // corners는 유지, 몸 포인트만 새로 자동감지
+    bodyPts={}; selChip=null;
+    enterCalibBody();   // 4점 건너뛰고 바로 몸 포인트
   }else{
-    // 3개 다 모임 → 결과 비교
     renderMotionResult();
     go(4);
   }
 };
 
+// 기구 4점 없이 바로 몸 포인트 보정 (2번째·3번째 프레임용)
+async function enterCalibBody(){
+  calibMode='points';
+  $('calibTitle').textContent=`${PHASE_LABEL[PHASES[calibPhaseIdx]]} — 몸 포인트 확인`;
+  $('calibHint').className='hint ok';
+  $('calibHint').innerHTML='기구 4점은 유지됩니다. 몸 포인트만 끌어서 맞추세요.';
+  load(true,'몸 포인트 감지 중…');
+  await detectBodyOnFrame();
+  load(false);
+  $('chips').style.display='flex'; renderChips();
+  $('calibNext').style.display='none';
+  $('runAnalyze').style.display='block';
+  $('runAnalyze').textContent = (calibPhaseIdx<PHASES.length-1)?`${PHASES[calibPhaseIdx+1]==='A2'?"A′":PHASES[calibPhaseIdx+1]} 몸 보정 →`:'세 자세 비교 분석 →';
+  drawCalib();
+  go(3);
+}
+
+
 function updatePhaseUI(){
   const ph=curPhase();
   const badge=document.getElementById('phaseBadge');
-  if(badge) badge.textContent = `측정 ${phaseIdx+1}/3 · ${PHASE_LABEL[ph]}`;
+  if(badge) badge.textContent = `프레임 ${phaseIdx+1}/3 · ${PHASE_LABEL[ph]}`;
   const what={A:'시작(다리 편)', B:'목표(다리 구부린)', A2:'복귀(다리 편)'}[ph];
   const w=document.getElementById('phaseWhat'); if(w) w.textContent=what;
-  // 마지막 페이즈면 버튼 라벨 변경
-  const btn=document.getElementById('runAnalyze');
-  if(btn) btn.textContent = (phaseIdx<PHASES.length-1) ? `${ph} 저장 — 다음 프레임 →` : '세 자세 비교 분석 →';
+  const btn=document.getElementById('toCalib');
+  if(btn){
+    const next={A:'B(구부린) 찾기', B:"A′(복귀) 찾기", A2:'기구 4점 보정'}[ph];
+    btn.textContent = `이 프레임을 ${ph==='A2'?"A′":ph}로 확정 → ${next}`;
+  }
+  // STEP2 다시 오면(2·3번째 프레임) 현재 위치 프레임 다시 그리기
+  if(V.duration && phaseIdx>0){ seekTo(V.currentTime||V.duration*0.5); }
 }
 
 /* 원근보정 (호모그래피) */
@@ -1134,7 +1178,7 @@ function buildMotionCombined(){
 }
 $('restart').onclick = ()=>{
   corners=[]; bodyPts={}; frameImg=null; selChip=null;
-  phaseIdx=0; captured.A=null; captured.B=null; captured.A2=null;
+  phaseIdx=0; calibPhaseIdx=0; captured.A=null; captured.B=null; captured.A2=null;
   $('file').value=''; go(1);
 };
 </script>
