@@ -99,7 +99,7 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
 <body>
 
 <div id="hdr">
-  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m7</b></small></div>
+  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m8</b></small></div>
   <div id="stepInd">1 / 4</div>
 </div>
 
@@ -1075,12 +1075,9 @@ function setupAnimation(){
   // ── 이상적 인물(빨강) 생성: 100% 완벽 정렬 ──
   // 실제 사람의 크기·위치만 참고, 정렬은 전부 이상적으로 재구성
   function buildIdeal(real){
-    // 중심축 x = 실제 몸 중심의 평균 (좌우 대칭 기준)
-    const cx = (()=>{ let xs=[];
-      [['sL','sR'],['hL','hR'],['kL','kR'],['aL','aR'],['toeL','toeR']].forEach(([l,r])=>{
-        if(real[l]&&real[r]) xs.push((real[l].x+real[r].x)/2); });
-      return xs.length? xs.reduce((a,b)=>a+b,0)/xs.length : 0.5;
-    })();
+    // 이상 인물의 중심축 = 리포머 정중앙 (원근보정 좌표계에서 x=0.5)
+    // 얼굴·몸통이 항상 기구 중앙선에 완벽 정렬
+    const cx = 0.5;
     // 각 레벨의 y = 실제 좌우 평균 (수평선 높이), 좌우 폭 = 실제 폭의 평균적 대칭
     const level=(l,r)=>{ if(!real[l]||!real[r]) return null;
       const y=(real[l].y+real[r].y)/2;              // 수평선 → 좌우 같은 높이
