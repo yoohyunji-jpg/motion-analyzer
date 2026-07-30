@@ -99,7 +99,7 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
 <body>
 
 <div id="hdr">
-  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m8</b></small></div>
+  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m9</b></small></div>
   <div id="stepInd">1 / 4</div>
 </div>
 
@@ -192,6 +192,8 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
       <button class="btn" id="loopBtn" style="flex:1;">🔁 반복 켜기</button>
     </div>
     <div class="res-note" id="artNote"></div>
+    <button class="btn gold" id="recBtn">🎬 홍보 영상 저장 (A→B→A′ 1회)</button>
+    <div id="recStatus" style="font-size:12px;color:var(--gray);text-align:center;margin-bottom:10px;"></div>
     <button class="btn ghost" id="backToResult">← 결과로 돌아가기</button>
   </section>
 </div>
@@ -1242,6 +1244,59 @@ $('loopBtn').onclick=()=>{
   $('loopBtn').textContent=animState.loop?'🔁 반복 끄기':'🔁 반복 켜기';
 };
 $('backToResult').onclick=()=>{ animState.playing=false; cancelAnimationFrame(animState.raf); go(4); };
+
+/* ── 홍보 영상 녹화 (canvas → 영상 파일) ── */
+$('recBtn').onclick=async ()=>{
+  const cv=$('cvArt');
+  if(!animState.coords){ alert('먼저 재생할 데이터가 필요합니다.'); return; }
+  // 지원 형식 탐색 (iOS는 mp4, 크롬은 webm)
+  const types=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm'];
+  let mime=types.find(t=>window.MediaRecorder && MediaRecorder.isTypeSupported(t));
+  if(!mime){
+    $('recStatus').textContent='이 브라우저는 앱 내 녹화를 지원하지 않습니다. iOS 화면 녹화를 사용하세요.';
+    return;
+  }
+  try{
+    const stream=cv.captureStream(30);
+    const rec=new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:6000000});
+    const chunks=[];
+    rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
+    rec.onstop=async ()=>{
+      const ext=mime.includes('mp4')?'mp4':'webm';
+      const blob=new Blob(chunks,{type:mime});
+      const file=new File([blob], fileBase()+'_홍보영상.'+ext, {type:mime});
+      $('recStatus').textContent='영상 완성! 저장 중…';
+      // iOS 공유시트 → 카메라롤
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        try{ await navigator.share({files:[file], title:'AXIS 동작분석'}); }
+        catch(e){ downloadBlob(blob, file.name); }
+      }else{ downloadBlob(blob, file.name); }
+      $('recStatus').textContent = ext==='mp4'? '저장 완료 (MP4)' : '저장 완료 (WEBM — 변환 필요할 수 있음)';
+    };
+    // 녹화 시작 → 애니메이션 1회(A→B→A′) 처음부터
+    $('recStatus').textContent='🔴 녹화 중… (약 5초)';
+    $('recBtn').disabled=true;
+    animState.loop=false; animState.t=0; animState.playing=true;
+    cancelAnimationFrame(animState.raf);
+    rec.start();
+    animate();
+    // t가 2에 도달(1회 완료)하면 정지
+    const waitEnd=setInterval(()=>{
+      if(!animState.playing || animState.t>=2){
+        clearInterval(waitEnd);
+        setTimeout(()=>{ if(rec.state!=='inactive') rec.stop(); $('recBtn').disabled=false; }, 300);
+      }
+    }, 100);
+  }catch(err){
+    $('recStatus').textContent='녹화 실패: '+err.message+' — iOS 화면 녹화를 사용하세요.';
+    $('recBtn').disabled=false;
+  }
+};
+function downloadBlob(blob,name){
+  const a=document.createElement('a'); a.download=name;
+  a.href=URL.createObjectURL(blob); a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
 
 
 function fileBase(){
