@@ -99,7 +99,7 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
 <body>
 
 <div id="hdr">
-  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m3</b></small></div>
+  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m4</b></small></div>
   <div id="stepInd">1 / 4</div>
 </div>
 
@@ -175,7 +175,24 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
     <div class="res-grid" id="resGrid"></div>
     <div class="res-note" id="resNote"></div>
     <button class="btn gold" id="dlPng">📷 동작 결과지 저장</button>
+    <button class="btn" id="toArt" style="background:linear-gradient(135deg,#A8382B,#8C6F35);border:none;color:#EFE9DA;">▶ 움직임 재생 · 골반의 궤적을 보다</button>
     <button class="btn red" id="restart">새 측정 시작</button>
+  </section>
+
+  <!-- 5. 동작 애니메이션 -->
+  <section class="screen" id="s5">
+    <div class="eyebrow">MOTION · 골반의 궤적</div>
+    <h1 style="margin-bottom:6px;">움직임 재생</h1>
+    <p class="lead" style="margin-bottom:14px;">골반이 어깨선 기준 <b>수직(90°)</b>으로 움직이는가</p>
+    <div id="cwrapArt" style="width:100%;background:#0e0d0a;border-radius:14px;overflow:hidden;border:1px solid var(--border);margin-bottom:12px;">
+      <canvas id="cvArt" style="display:block;width:100%;height:auto;"></canvas>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button class="btn gold" id="playBtn" style="flex:1;">▶ 재생</button>
+      <button class="btn" id="loopBtn" style="flex:1;">🔁 반복 켜기</button>
+    </div>
+    <div class="res-note" id="artNote"></div>
+    <button class="btn ghost" id="backToResult">← 결과로 돌아가기</button>
   </section>
 </div>
 
@@ -218,8 +235,8 @@ let selChip=null;
 const CORNER_LABEL=['좌상','우상','우하','좌하'];
 
 function go(n){
-  [1,2,3,4].forEach(i=>$('s'+i).classList.toggle('on', i===n));
-  $('stepInd').textContent = n+' / 4';
+  [1,2,3,4,5].forEach(i=>$('s'+i).classList.toggle('on', i===n));
+  $('stepInd').textContent = (n<=4? n+' / 4' : 'ART');
   $('main').scrollTop=0;
 }
 const load=(on,txt)=>{ $('load').classList.toggle('on',on); if(txt)$('loadTxt').textContent=txt; };
@@ -1034,6 +1051,153 @@ function renderMotionResult(){
   // 저장용 통합 캔버스 준비
   window.__motionCanvases=[cv,cv2];
 }
+
+/* ══════════ 동작 애니메이션 (골반 궤적) ══════════ */
+let animState={raf:null, t:0, playing:false, loop:false, coords:null};
+
+// 한 페이즈의 보정 좌표(0~1) 반환
+function phaseCoords(cap){
+  if(!cap||!cap.corners||!cap.bodyPts) return null;
+  const H=computeHomography(cap.corners); const c={};
+  POINT_KEYS.forEach(k=>{ if(cap.bodyPts[k]) c[k]=applyH(H,cap.bodyPts[k].nx,cap.bodyPts[k].ny); });
+  return c;
+}
+const _mid=(a,b)=>a&&b?{x:(a.x+b.x)/2,y:(a.y+b.y)/2}:null;
+// 점 보간
+function lerpPt(p,q,t){ if(!p||!q)return p||q; return {x:p.x+(q.x-p.x)*t, y:p.y+(q.y-p.y)*t}; }
+function lerpCoords(c1,c2,t){ const o={}; POINT_KEYS.forEach(k=>{ if(c1[k]&&c2[k]) o[k]=lerpPt(c1[k],c2[k],t); else o[k]=c1[k]||c2[k]; }); return o; }
+
+function setupAnimation(){
+  const cA=phaseCoords(captured.A), cB=phaseCoords(captured.B), cA2=phaseCoords(captured.A2);
+  if(!cA||!cB||!cA2){ animState.coords=null; return false; }
+  animState.coords={A:cA,B:cB,A2:cA2};
+  // 골반 이동의 수직 이탈각 계산 (A→B)
+  const sm=_mid(cA.sL,cA.sR), hmA=_mid(cA.hL,cA.hR), hmB=_mid(cB.hL,cB.hR);
+  let devText='';
+  if(sm && hmA && hmB && cA.sL && cA.sR){
+    // 어깨선 방향
+    const shDir={x:cA.sR.x-cA.sL.x, y:cA.sR.y-cA.sL.y};
+    // 어깨선의 수직 방향 (90° 회전)
+    const perp={x:-shDir.y, y:shDir.x};
+    // 골반 이동 벡터 A→B
+    const mv={x:hmB.x-hmA.x, y:hmB.y-hmA.y};
+    // perp와 mv 사이 각도
+    const dot=perp.x*mv.x+perp.y*mv.y;
+    const magP=Math.hypot(perp.x,perp.y), magM=Math.hypot(mv.x,mv.y);
+    if(magP>1e-6 && magM>1e-6){
+      let ang=Math.acos(Math.max(-1,Math.min(1,dot/(magP*magM))))*180/Math.PI;
+      if(ang>90) ang=180-ang;   // 방향 무관 예각
+      const bad=ang>5;
+      devText=`골반 수직 이탈각 <b style="color:${bad?'#FF6B6B':'#22C55E'}">${ang.toFixed(1)}°</b> — ` +
+        (bad?'수직 운동에서 벗어남 (경우1)':'거의 완벽한 수직 운동');
+    }
+  }
+  $('artNote').innerHTML='<b>골반의 궤적</b> · 초록 선이 골반 중점이 A→B→A′로 이동한 경로입니다. ' +
+    '어깨선 수직(점선)과 나란할수록 좋습니다.<br>'+devText;
+  return true;
+}
+
+function drawAnimFrame(tt){
+  const cv=$('cvArt'), x=cv.getContext('2d');
+  const W=900,H=1150; if(cv.width!==W){cv.width=W;cv.height=H;}
+  const co=animState.coords; if(!co) return;
+  // 좌표계: 0~1 → 캔버스 (여백)
+  const M=70, fw=W-M*2, fh=H-M*2;
+  const T=(p)=>({x:M+p.x*fw, y:M+p.y*fh});
+  // 배경
+  x.fillStyle='#0e0d0a'; x.fillRect(0,0,W,H);
+  // 리포머 격자
+  x.strokeStyle='rgba(140,111,53,.18)'; x.lineWidth=1;
+  for(let i=0;i<=10;i++){ const gx=M+fw*i/10; x.beginPath();x.moveTo(gx,M);x.lineTo(gx,M+fh);x.stroke(); }
+  for(let i=0;i<=14;i++){ const gy=M+fh*i/14; x.beginPath();x.moveTo(M,gy);x.lineTo(M+fw,gy);x.stroke(); }
+  x.strokeStyle='rgba(245,158,11,.6)'; x.lineWidth=2; x.setLineDash([10,6]);
+  x.strokeRect(M,M,fw,fh); x.setLineDash([]);
+
+  // 현재 보간 위치
+  // tt: 0~1 (A→B), 1~2 (B→A′)
+  let cur;
+  if(tt<=1) cur=lerpCoords(co.A,co.B,tt);
+  else cur=lerpCoords(co.B,co.A2,tt-1);
+
+  // 어깨선 (수평 기준) + 그 수직선 (골반이 가야 할 방향)
+  const sL=cur.sL,sR=cur.sR, sm=_mid(sL,sR);
+  if(sL&&sR&&sm){
+    const A=T(sL),B=T(sR),SM=T(sm);
+    x.strokeStyle='#E8291C'; x.lineWidth=4; x.lineCap='round';
+    x.beginPath();x.moveTo(A.x,A.y);x.lineTo(B.x,B.y);x.stroke();
+    // 어깨선 수직 (점선, 이상적 골반 이동 방향)
+    const shDir={x:B.x-A.x,y:B.y-A.y}; const L=Math.hypot(shDir.x,shDir.y)||1;
+    const perp={x:-shDir.y/L,y:shDir.x/L};
+    x.strokeStyle='rgba(255,255,255,.35)';x.lineWidth=2;x.setLineDash([8,8]);
+    x.beginPath();x.moveTo(SM.x-perp.x*fh,SM.y-perp.y*fh);x.lineTo(SM.x+perp.x*fh,SM.y+perp.y*fh);x.stroke();x.setLineDash([]);
+  }
+  // 나머지 관절 (희미하게)
+  const seg=(a,b,col,w,al)=>{const P=cur[a],Q=cur[b];if(!P||!Q)return;
+    const A=T(P),B=T(Q); x.globalAlpha=al; x.strokeStyle=col;x.lineWidth=w;x.lineCap='round';
+    x.beginPath();x.moveTo(A.x,A.y);x.lineTo(B.x,B.y);x.stroke(); x.globalAlpha=1;};
+  ['hL hR','kL kR','aL aR','toeL toeR','sL hL','sR hR','hL kL','hR kR','kL aL','kR aR','aL toeL','aR toeR']
+    .forEach(p=>{const[a,b]=p.split(' ');seg(a,b,'rgba(239,233,218,.5)',3,0.5);});
+  POINT_KEYS.forEach(k=>{ if(!cur[k])return; const P=T(cur[k]);
+    x.globalAlpha=0.5; x.fillStyle='#EFE9DA'; x.beginPath();x.arc(P.x,P.y,4,0,7);x.fill(); x.globalAlpha=1; });
+
+  // ── 골반 중점 궤적 (주인공) ──
+  // 전체 경로를 미리 그림 (trail)
+  const hmA=_mid(co.A.hL,co.A.hR), hmB=_mid(co.B.hL,co.B.hR), hmA2=_mid(co.A2.hL,co.A2.hR);
+  if(hmA&&hmB&&hmA2){
+    const PA=T(hmA),PB=T(hmB),PA2=T(hmA2);
+    // 경로 실선
+    x.strokeStyle='rgba(34,197,94,.4)'; x.lineWidth=3;
+    x.beginPath();x.moveTo(PA.x,PA.y);x.lineTo(PB.x,PB.y);x.lineTo(PA2.x,PA2.y);x.stroke();
+    // A·B·A′ 위치 마커
+    [[PA,'A'],[PB,'B'],[PA2,"A′"]].forEach(([p,l])=>{
+      x.fillStyle='rgba(34,197,94,.25)'; x.beginPath();x.arc(p.x,p.y,7,0,7);x.fill();
+      x.fillStyle='#22C55E'; x.font='700 16px -apple-system'; x.textAlign='center';
+      x.fillText(l, p.x, p.y-14);
+    });
+    // 현재 골반 위치 (빛나는 점)
+    const hmCur=_mid(cur.hL,cur.hR);
+    if(hmCur){ const PC=T(hmCur);
+      x.shadowColor='#22C55E'; x.shadowBlur=20; x.fillStyle='#22C55E';
+      x.beginPath();x.arc(PC.x,PC.y,10,0,7);x.fill(); x.shadowBlur=0;
+      x.fillStyle='#fff'; x.font='700 13px -apple-system'; x.textAlign='center';
+      x.fillText('골반', PC.x, PC.y+26);
+    }
+  }
+  // 제목
+  x.fillStyle='#F59E0B'; x.font='700 18px -apple-system'; x.textAlign='left'; x.textBaseline='top';
+  x.fillText('골반 궤적 · Footwork', 20, 18);
+  const ph = tt<=1? `A → B (${(tt*100).toFixed(0)}%)` : `B → A′ (${((tt-1)*100).toFixed(0)}%)`;
+  x.fillStyle='#EFE9DA'; x.font='500 14px -apple-system'; x.textAlign='right';
+  x.fillText(ph, W-20, 20);
+}
+
+function animate(){
+  if(!animState.playing) return;
+  animState.t += 0.012;
+  if(animState.t>=2){
+    if(animState.loop){ animState.t=0; }
+    else{ animState.t=2; drawAnimFrame(2); animState.playing=false; $('playBtn').textContent='▶ 다시 재생'; return; }
+  }
+  drawAnimFrame(animState.t);
+  animState.raf=requestAnimationFrame(animate);
+}
+
+$('toArt').onclick=()=>{
+  if(!setupAnimation()){ alert('세 프레임 데이터가 필요합니다.'); return; }
+  go(5);
+  animState.t=0; animState.playing=true; $('playBtn').textContent='⏸ 일시정지';
+  cancelAnimationFrame(animState.raf); animate();
+};
+$('playBtn').onclick=()=>{
+  if(animState.playing){ animState.playing=false; cancelAnimationFrame(animState.raf); $('playBtn').textContent='▶ 재생'; }
+  else{ if(animState.t>=2) animState.t=0; animState.playing=true; $('playBtn').textContent='⏸ 일시정지'; animate(); }
+};
+$('loopBtn').onclick=()=>{
+  animState.loop=!animState.loop;
+  $('loopBtn').textContent=animState.loop?'🔁 반복 끄기':'🔁 반복 켜기';
+};
+$('backToResult').onclick=()=>{ animState.playing=false; cancelAnimationFrame(animState.raf); go(4); };
+
 
 function fileBase(){
   const name=($('memberName').value||'회원').replace(/\s/g,'');
