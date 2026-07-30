@@ -99,7 +99,7 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
 <body>
 
 <div id="hdr">
-  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m4</b></small></div>
+  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m5</b></small></div>
   <div id="stepInd">1 / 4</div>
 </div>
 
@@ -1071,29 +1071,52 @@ function setupAnimation(){
   const cA=phaseCoords(captured.A), cB=phaseCoords(captured.B), cA2=phaseCoords(captured.A2);
   if(!cA||!cB||!cA2){ animState.coords=null; return false; }
   animState.coords={A:cA,B:cB,A2:cA2};
-  // 골반 이동의 수직 이탈각 계산 (A→B)
+
+  // ── 이상적 인물(빨강) 생성 ──
+  // 전제: A 자세를 완벽 정렬로 세우고, 골반은 어깨선 수직으로만 이동
+  function idealFrom(real, movePhase){
+    // real: 기준 실제 좌표(A), movePhase: 이동량 참조(B)
+    const sL=real.sL, sR=real.sR, sm=_mid(sL,sR);
+    if(!sL||!sR||!sm) return JSON.parse(JSON.stringify(real));
+    // 어깨선 수직 단위벡터
+    const shDir={x:sR.x-sL.x,y:sR.y-sL.y}; const L=Math.hypot(shDir.x,shDir.y)||1;
+    const perp={x:-shDir.y/L,y:shDir.x/L};
+    // 실제 골반 이동량을 수직축에 투영한 거리
+    const hmR=_mid(real.hL,real.hR), hmM=_mid(movePhase.hL,movePhase.hR);
+    const mv={x:hmM.x-hmR.x,y:hmM.y-hmR.y};
+    const proj=mv.x*perp.x+mv.y*perp.y;   // 수직 성분만
+    // 이상 골반 = 실제 A 골반 + 수직방향*투영거리
+    const ideal=JSON.parse(JSON.stringify(real));
+    // 골반·무릎·발목·발가락을 수직으로만 이동 (하체 전체가 수직 운동)
+    ['hL','hR','kL','kR','aL','aR','toeL','toeR'].forEach(k=>{
+      if(ideal[k]){ ideal[k]={x:ideal[k].x+perp.x*proj, y:ideal[k].y+perp.y*proj}; }
+    });
+    return ideal;
+  }
+  const iA=JSON.parse(JSON.stringify(cA));          // 이상 시작 = 실제 A
+  const iB=idealFrom(cA,cB);                        // 이상 B = A에서 수직으로만
+  const iA2=JSON.parse(JSON.stringify(cA));         // 이상 복귀 = 정확히 A로 복귀
+  animState.ideal={A:iA,B:iB,A2:iA2};
+
+  // 골반 수직 이탈각 (실제 A→B)
   const sm=_mid(cA.sL,cA.sR), hmA=_mid(cA.hL,cA.hR), hmB=_mid(cB.hL,cB.hR);
   let devText='';
-  if(sm && hmA && hmB && cA.sL && cA.sR){
-    // 어깨선 방향
-    const shDir={x:cA.sR.x-cA.sL.x, y:cA.sR.y-cA.sL.y};
-    // 어깨선의 수직 방향 (90° 회전)
-    const perp={x:-shDir.y, y:shDir.x};
-    // 골반 이동 벡터 A→B
-    const mv={x:hmB.x-hmA.x, y:hmB.y-hmA.y};
-    // perp와 mv 사이 각도
+  if(sm&&hmA&&hmB&&cA.sL&&cA.sR){
+    const shDir={x:cA.sR.x-cA.sL.x,y:cA.sR.y-cA.sL.y};
+    const perp={x:-shDir.y,y:shDir.x};
+    const mv={x:hmB.x-hmA.x,y:hmB.y-hmA.y};
     const dot=perp.x*mv.x+perp.y*mv.y;
-    const magP=Math.hypot(perp.x,perp.y), magM=Math.hypot(mv.x,mv.y);
-    if(magP>1e-6 && magM>1e-6){
+    const magP=Math.hypot(perp.x,perp.y),magM=Math.hypot(mv.x,mv.y);
+    if(magP>1e-6&&magM>1e-6){
       let ang=Math.acos(Math.max(-1,Math.min(1,dot/(magP*magM))))*180/Math.PI;
-      if(ang>90) ang=180-ang;   // 방향 무관 예각
+      if(ang>90)ang=180-ang;
       const bad=ang>5;
-      devText=`골반 수직 이탈각 <b style="color:${bad?'#FF6B6B':'#22C55E'}">${ang.toFixed(1)}°</b> — ` +
-        (bad?'수직 운동에서 벗어남 (경우1)':'거의 완벽한 수직 운동');
+      devText=`골반 수직 이탈각 <b style="color:${bad?'#FF6B6B':'#22C55E'}">${ang.toFixed(1)}°</b> — `+
+        (bad?'수직 운동에서 벗어남':'거의 완벽한 수직 운동');
     }
   }
-  $('artNote').innerHTML='<b>골반의 궤적</b> · 초록 선이 골반 중점이 A→B→A′로 이동한 경로입니다. ' +
-    '어깨선 수직(점선)과 나란할수록 좋습니다.<br>'+devText;
+  $('artNote').innerHTML='<b style="color:#E8291C">빨강</b> = 이상적 움직임(90° 수직) · '+
+    '<b style="color:#22C55E">초록</b> = 실제 움직임<br>둘이 겹칠수록 완벽합니다. '+devText;
   return true;
 }
 
@@ -1113,59 +1136,68 @@ function drawAnimFrame(tt){
   x.strokeStyle='rgba(245,158,11,.6)'; x.lineWidth=2; x.setLineDash([10,6]);
   x.strokeRect(M,M,fw,fh); x.setLineDash([]);
 
-  // 현재 보간 위치
-  // tt: 0~1 (A→B), 1~2 (B→A′)
-  let cur;
-  if(tt<=1) cur=lerpCoords(co.A,co.B,tt);
-  else cur=lerpCoords(co.B,co.A2,tt-1);
+  // 현재 보간 위치 (실제=초록, 이상=빨강)
+  let cur, ideal;
+  if(tt<=1){ cur=lerpCoords(co.A,co.B,tt); ideal=lerpCoords(animState.ideal.A,animState.ideal.B,tt); }
+  else{ cur=lerpCoords(co.B,co.A2,tt-1); ideal=lerpCoords(animState.ideal.B,animState.ideal.A2,tt-1); }
 
-  // 어깨선 (수평 기준) + 그 수직선 (골반이 가야 할 방향)
+  // 어깨선 수직 기준선 (흰 점선) — 이상 골반이 가야 할 축
   const sL=cur.sL,sR=cur.sR, sm=_mid(sL,sR);
   if(sL&&sR&&sm){
-    const A=T(sL),B=T(sR),SM=T(sm);
-    x.strokeStyle='#E8291C'; x.lineWidth=4; x.lineCap='round';
-    x.beginPath();x.moveTo(A.x,A.y);x.lineTo(B.x,B.y);x.stroke();
-    // 어깨선 수직 (점선, 이상적 골반 이동 방향)
-    const shDir={x:B.x-A.x,y:B.y-A.y}; const L=Math.hypot(shDir.x,shDir.y)||1;
+    const SM=T(sm);
+    const shDir={x:sR.x-sL.x,y:sR.y-sL.y}; const L=Math.hypot(shDir.x,shDir.y)||1;
     const perp={x:-shDir.y/L,y:shDir.x/L};
-    x.strokeStyle='rgba(255,255,255,.35)';x.lineWidth=2;x.setLineDash([8,8]);
+    x.strokeStyle='rgba(255,255,255,.25)';x.lineWidth=1.5;x.setLineDash([8,8]);
     x.beginPath();x.moveTo(SM.x-perp.x*fh,SM.y-perp.y*fh);x.lineTo(SM.x+perp.x*fh,SM.y+perp.y*fh);x.stroke();x.setLineDash([]);
   }
-  // 나머지 관절 (희미하게)
-  const seg=(a,b,col,w,al)=>{const P=cur[a],Q=cur[b];if(!P||!Q)return;
-    const A=T(P),B=T(Q); x.globalAlpha=al; x.strokeStyle=col;x.lineWidth=w;x.lineCap='round';
-    x.beginPath();x.moveTo(A.x,A.y);x.lineTo(B.x,B.y);x.stroke(); x.globalAlpha=1;};
-  ['hL hR','kL kR','aL aR','toeL toeR','sL hL','sR hR','hL kL','hR kR','kL aL','kR aR','aL toeL','aR toeR']
-    .forEach(p=>{const[a,b]=p.split(' ');seg(a,b,'rgba(239,233,218,.5)',3,0.5);});
-  POINT_KEYS.forEach(k=>{ if(!cur[k])return; const P=T(cur[k]);
-    x.globalAlpha=0.5; x.fillStyle='#EFE9DA'; x.beginPath();x.arc(P.x,P.y,4,0,7);x.fill(); x.globalAlpha=1; });
 
-  // ── 골반 중점 궤적 (주인공) ──
-  // 전체 경로를 미리 그림 (trail)
+  // 스켈레톤 그리기 헬퍼
+  const skel=(coords,col,al,lw)=>{
+    const seg=(a,b)=>{const P=coords[a],Q=coords[b];if(!P||!Q)return;
+      const A=T(P),B=T(Q); x.globalAlpha=al; x.strokeStyle=col;x.lineWidth=lw;x.lineCap='round';
+      x.beginPath();x.moveTo(A.x,A.y);x.lineTo(B.x,B.y);x.stroke(); x.globalAlpha=1;};
+    ['sL sR','hL hR','kL kR','aL aR','toeL toeR','sL hL','sR hR','hL kL','hR kR','kL aL','kR aR','aL toeL','aR toeR']
+      .forEach(p=>{const[a,b]=p.split(' ');seg(a,b);});
+    POINT_KEYS.forEach(k=>{ if(!coords[k])return; const P=T(coords[k]);
+      x.globalAlpha=al; x.fillStyle=col; x.beginPath();x.arc(P.x,P.y,3.5,0,7);x.fill(); x.globalAlpha=1; });
+  };
+  // 빨강 = 이상 (먼저, 뒤에)
+  skel(ideal, '#E8291C', 0.55, 3);
+  // 초록 = 실제 (앞에)
+  skel(cur, '#22C55E', 0.9, 3.5);
+
+  // ── 골반 중점 궤적 ──
+  // 이상 경로(빨강 점선)
+  const iA=_mid(animState.ideal.A.hL,animState.ideal.A.hR),
+        iB=_mid(animState.ideal.B.hL,animState.ideal.B.hR),
+        iA2=_mid(animState.ideal.A2.hL,animState.ideal.A2.hR);
+  if(iA&&iB){ const QA=T(iA),QB=T(iB),QA2=T(iA2);
+    x.strokeStyle='rgba(232,41,28,.5)'; x.lineWidth=2.5; x.setLineDash([7,5]);
+    x.beginPath();x.moveTo(QA.x,QA.y);x.lineTo(QB.x,QB.y);x.lineTo(QA2.x,QA2.y);x.stroke();x.setLineDash([]);
+  }
+  // 실제 경로(초록 실선)
   const hmA=_mid(co.A.hL,co.A.hR), hmB=_mid(co.B.hL,co.B.hR), hmA2=_mid(co.A2.hL,co.A2.hR);
   if(hmA&&hmB&&hmA2){
     const PA=T(hmA),PB=T(hmB),PA2=T(hmA2);
-    // 경로 실선
-    x.strokeStyle='rgba(34,197,94,.4)'; x.lineWidth=3;
+    x.strokeStyle='rgba(34,197,94,.5)'; x.lineWidth=3;
     x.beginPath();x.moveTo(PA.x,PA.y);x.lineTo(PB.x,PB.y);x.lineTo(PA2.x,PA2.y);x.stroke();
-    // A·B·A′ 위치 마커
     [[PA,'A'],[PB,'B'],[PA2,"A′"]].forEach(([p,l])=>{
       x.fillStyle='rgba(34,197,94,.25)'; x.beginPath();x.arc(p.x,p.y,7,0,7);x.fill();
       x.fillStyle='#22C55E'; x.font='700 16px -apple-system'; x.textAlign='center';
       x.fillText(l, p.x, p.y-14);
     });
-    // 현재 골반 위치 (빛나는 점)
     const hmCur=_mid(cur.hL,cur.hR);
     if(hmCur){ const PC=T(hmCur);
       x.shadowColor='#22C55E'; x.shadowBlur=20; x.fillStyle='#22C55E';
       x.beginPath();x.arc(PC.x,PC.y,10,0,7);x.fill(); x.shadowBlur=0;
-      x.fillStyle='#fff'; x.font='700 13px -apple-system'; x.textAlign='center';
-      x.fillText('골반', PC.x, PC.y+26);
     }
   }
-  // 제목
+  // 제목 + 범례
   x.fillStyle='#F59E0B'; x.font='700 18px -apple-system'; x.textAlign='left'; x.textBaseline='top';
   x.fillText('골반 궤적 · Footwork', 20, 18);
+  x.fillStyle='#22C55E'; x.font='700 13px -apple-system';
+  x.fillText('● 실제', 20, 44);
+  x.fillStyle='#E8291C'; x.fillText('● 이상(90°)', 90, 44);
   const ph = tt<=1? `A → B (${(tt*100).toFixed(0)}%)` : `B → A′ (${((tt-1)*100).toFixed(0)}%)`;
   x.fillStyle='#EFE9DA'; x.font='500 14px -apple-system'; x.textAlign='right';
   x.fillText(ph, W-20, 20);
