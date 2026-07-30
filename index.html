@@ -99,7 +99,7 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
 <body>
 
 <div id="hdr">
-  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m6</b></small></div>
+  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m7</b></small></div>
   <div id="stepInd">1 / 4</div>
 </div>
 
@@ -1105,10 +1105,11 @@ function setupAnimation(){
   let drop=0;
   if(_hmA&&_hmB){ drop=_hmB.y-_hmA.y; }   // 수직 하강
   const iB=JSON.parse(JSON.stringify(iBbase));
-  // 하체 전체를 순수 수직으로 drop만큼 (x 고정 = 완벽 수직)
-  ['hL','hR','kL','kR','aL','aR','toeL','toeR'].forEach(k=>{
-    if(iB[k]){ iB[k]={x:iB[k].x, y:iB[k].y+drop}; }
-  });
+  // Footwork: 발(발목·발가락)은 풋바에 고정. 캐리지(어깨·골반·몸통)가 발쪽으로 미끄러짐.
+  // → 발 제외한 전신이 순수 수직으로 이동 (x 고정 = 완벽 수직)
+  const moveKeys=['crown','brow','nose','chin','sL','sR','hL','hR','kL','kR'];
+  moveKeys.forEach(k=>{ if(iB[k]){ iB[k]={x:iB[k].x, y:iB[k].y+drop}; } });
+  // 발목·발가락은 고정 (풋바)
   const iA2=buildIdeal(cA);   // 완벽 복귀
   animState.ideal={A:iA,B:iB,A2:iA2};
 
