@@ -99,7 +99,7 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
 <body>
 
 <div id="hdr">
-  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m5</b></small></div>
+  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m6</b></small></div>
   <div id="stepInd">1 / 4</div>
 </div>
 
@@ -1072,31 +1072,46 @@ function setupAnimation(){
   if(!cA||!cB||!cA2){ animState.coords=null; return false; }
   animState.coords={A:cA,B:cB,A2:cA2};
 
-  // ── 이상적 인물(빨강) 생성 ──
-  // 전제: A 자세를 완벽 정렬로 세우고, 골반은 어깨선 수직으로만 이동
-  function idealFrom(real, movePhase){
-    // real: 기준 실제 좌표(A), movePhase: 이동량 참조(B)
-    const sL=real.sL, sR=real.sR, sm=_mid(sL,sR);
-    if(!sL||!sR||!sm) return JSON.parse(JSON.stringify(real));
-    // 어깨선 수직 단위벡터
-    const shDir={x:sR.x-sL.x,y:sR.y-sL.y}; const L=Math.hypot(shDir.x,shDir.y)||1;
-    const perp={x:-shDir.y/L,y:shDir.x/L};
-    // 실제 골반 이동량을 수직축에 투영한 거리
-    const hmR=_mid(real.hL,real.hR), hmM=_mid(movePhase.hL,movePhase.hR);
-    const mv={x:hmM.x-hmR.x,y:hmM.y-hmR.y};
-    const proj=mv.x*perp.x+mv.y*perp.y;   // 수직 성분만
-    // 이상 골반 = 실제 A 골반 + 수직방향*투영거리
-    const ideal=JSON.parse(JSON.stringify(real));
-    // 골반·무릎·발목·발가락을 수직으로만 이동 (하체 전체가 수직 운동)
-    ['hL','hR','kL','kR','aL','aR','toeL','toeR'].forEach(k=>{
-      if(ideal[k]){ ideal[k]={x:ideal[k].x+perp.x*proj, y:ideal[k].y+perp.y*proj}; }
-    });
-    return ideal;
+  // ── 이상적 인물(빨강) 생성: 100% 완벽 정렬 ──
+  // 실제 사람의 크기·위치만 참고, 정렬은 전부 이상적으로 재구성
+  function buildIdeal(real){
+    // 중심축 x = 실제 몸 중심의 평균 (좌우 대칭 기준)
+    const cx = (()=>{ let xs=[];
+      [['sL','sR'],['hL','hR'],['kL','kR'],['aL','aR'],['toeL','toeR']].forEach(([l,r])=>{
+        if(real[l]&&real[r]) xs.push((real[l].x+real[r].x)/2); });
+      return xs.length? xs.reduce((a,b)=>a+b,0)/xs.length : 0.5;
+    })();
+    // 각 레벨의 y = 실제 좌우 평균 (수평선 높이), 좌우 폭 = 실제 폭의 평균적 대칭
+    const level=(l,r)=>{ if(!real[l]||!real[r]) return null;
+      const y=(real[l].y+real[r].y)/2;              // 수평선 → 좌우 같은 높이
+      const halfW=Math.abs(real[l].x-real[r].x)/2;  // 좌우 대칭 폭
+      return {y, halfW};
+    };
+    const o={};
+    const setPair=(l,r)=>{ const lv=level(l,r); if(!lv)return;
+      o[l]={x:cx+lv.halfW, y:lv.y};   // L = 오른쪽(화면), 대칭
+      o[r]={x:cx-lv.halfW, y:lv.y};
+    };
+    setPair('sL','sR'); setPair('hL','hR'); setPair('kL','kR'); setPair('aL','aR'); setPair('toeL','toeR');
+    // 얼굴·중심점은 축 위에 정렬
+    ['crown','brow','nose','chin'].forEach(k=>{ if(real[k]) o[k]={x:cx, y:real[k].y}; });
+    return o;
   }
-  const iA=JSON.parse(JSON.stringify(cA));          // 이상 시작 = 실제 A
-  const iB=idealFrom(cA,cB);                        // 이상 B = A에서 수직으로만
-  const iA2=JSON.parse(JSON.stringify(cA));         // 이상 복귀 = 정확히 A로 복귀
+  // 이상 A = 완벽 정렬. 이상 B = A에서 하체를 순수 수직으로 이동. 이상 A′ = A로 완전 복귀
+  const iA=buildIdeal(cA);
+  const iBbase=buildIdeal(cA);
+  // B의 실제 골반 하강량(수직 성분) 계산
+  const _hmA=_mid(cA.hL,cA.hR), _hmB=_mid(cB.hL,cB.hR);
+  let drop=0;
+  if(_hmA&&_hmB){ drop=_hmB.y-_hmA.y; }   // 수직 하강
+  const iB=JSON.parse(JSON.stringify(iBbase));
+  // 하체 전체를 순수 수직으로 drop만큼 (x 고정 = 완벽 수직)
+  ['hL','hR','kL','kR','aL','aR','toeL','toeR'].forEach(k=>{
+    if(iB[k]){ iB[k]={x:iB[k].x, y:iB[k].y+drop}; }
+  });
+  const iA2=buildIdeal(cA);   // 완벽 복귀
   animState.ideal={A:iA,B:iB,A2:iA2};
+
 
   // 골반 수직 이탈각 (실제 A→B)
   const sm=_mid(cA.sL,cA.sR), hmA=_mid(cA.hL,cA.hR), hmB=_mid(cB.hL,cB.hR);
