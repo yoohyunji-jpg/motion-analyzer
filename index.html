@@ -99,7 +99,7 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
 <body>
 
 <div id="hdr">
-  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m1</b></small></div>
+  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m2</b></small></div>
   <div id="stepInd">1 / 4</div>
 </div>
 
@@ -250,15 +250,26 @@ $('file').addEventListener('change', async e=>{
     corners=[]; bodyPts={}; selChip=null;
     updatePhaseUI();
     go(2);
-  }catch(err){ load(false); alert(err.message+'\n.mov 파일은 .mp4로 변환 후 시도하세요.'); }
+  }catch(err){ load(false);
+    alert('영상을 불러오지 못했습니다: '+err.message+
+      '\n\niPhone 기본 카메라(.mov/HEVC)는 호환이 어려울 수 있습니다.\n설정 → 카메라 → 포맷 → "높은 호환성"으로 촬영하거나, .mp4로 변환 후 시도하세요.'); }
 });
 
 /* ── STEP 2: 프레임 선택 ── */
 const cv=$('cv'), cx=cv.getContext('2d');
 function setupScrub(){
+  if(!V.duration || isNaN(V.duration)){
+    // 메타데이터 아직 → 잠시 후 재시도
+    setTimeout(setupScrub, 200); return;
+  }
   $('scrub').value=50;
-  // 첫 프레임은 약간 뒤로 (0초는 검은 프레임일 수 있음)
-  seekTo(Math.min(V.duration*0.5, V.duration-0.1));
+  seekTo(Math.min(V.duration*0.5, Math.max(V.duration-0.1,0.1)));
+  // 안전망: 0.6초 내 프레임이 안 그려지면 강제로 한 번 더
+  setTimeout(()=>{
+    if($('frameTime').textContent==='0.0초'){
+      _seekPending=true; V.currentTime=Math.min(V.duration*0.5, V.duration-0.1);
+    }
+  }, 700);
 }
 $('scrub').addEventListener('input', ()=>{ seekTo(V.duration*$('scrub').value/100); });
 let _seekPending=false;
