@@ -256,6 +256,20 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
     </div>
 
     <div class="fld">
+      <label>안쪽 1에 넣을 측정 사진</label>
+      <div class="seg" id="segPhoto">
+        <button data-p="A" class="on">A · 시작</button>
+        <button data-p="B">B · 목표</button>
+        <button data-p="AB">A + B</button>
+        <button data-p="none">사진 없이</button>
+      </div>
+      <div style="font-size:11px;color:var(--gray);line-height:1.6;margin-top:8px;">
+        스냅샷 위에 매트 4점과 관절점을 함께 인쇄합니다. 인쇄 잉크를 줄이려고 흑백으로 밝게 변환됩니다.
+        &lsquo;사진 없이&rsquo;를 고르면 A · B · A′ 도식 3분할로 돌아갑니다.
+      </div>
+    </div>
+
+    <div class="fld">
       <label>표지 아트 기준 자세</label>
       <div class="seg" id="segArt">
         <button data-p="A" class="on">A · 시작</button>
@@ -1560,7 +1574,7 @@ const SHEET_CHECKS = [
   '골반이 좌우 수평을 유지했다',
   '상체 보상이 없었다 (어깨가 들리지 않음)'
 ];
-const sheetState = { checks:[false,false,false,false], artPhase:'A', bg:false };
+const sheetState = { checks:[false,false,false,false], artPhase:'A', bg:false, photo:'A' };
 
 const KF=(x,w,sz)=>{ x.font=`${w} ${sz}px "Noto Sans KR",sans-serif`; };
 const GF=(x,w,sz)=>{ x.font=`${w} ${sz}px "Space Grotesk",sans-serif`; };
@@ -1618,7 +1632,9 @@ function sheetData(){
     mB: (captured.B&&captured.B.metrics)||{},
     mA2:(captured.A2&&captured.A2.metrics)||{},
     dev: pelvisDeviation(),
-    art: sheetState.artPhase
+    art: sheetState.artPhase,
+    photo: sheetState.photo,
+    rawA: captured.A, rawB: captured.B, rawA2: captured.A2
   };
 }
 
@@ -1645,14 +1661,86 @@ function drawSkelPrint(x, c, bx, by, bw, bh, opt){
   }
 }
 
+function panelCaption(x, bx, bw, ph, by, title, sub){
+  x.textAlign='center'; x.fillStyle=SH.red; KF(x,700,2.7);
+  x.fillText(title, bx+bw/2, by+ph+3.2);
+  if(sub){ x.fillStyle=SH.ink35; KF(x,400,2.1); x.fillText(sub, bx+bw/2, by+ph+6.2); }
+}
 function skelPanel(x, c, bx, by, bw, bh, title, sub){
-  x.strokeStyle=SH.ink18; x.lineWidth=0.25; x.strokeRect(bx,by,bw,bh-7);
-  // 기구 중심 수직선
-  line(x, bx+bw/2, by+1, bx+bw/2, by+bh-8, 'rgba(140,111,53,.45)', 0.2);
-  drawSkelPrint(x, c, bx, by, bw, bh-7, {color:SH.ink, lw:0.5});
-  x.textAlign='center'; x.fillStyle=SH.red; KF(x,700,2.9);
-  x.fillText(title, bx+bw/2, by+bh-2.6);
-  if(sub){ x.fillStyle=SH.ink55; KF(x,400,2.2); x.fillText(sub, bx+bw/2, by+bh+0.9); }
+  const ph=bh-7;
+  x.strokeStyle=SH.ink18; x.lineWidth=0.25; x.strokeRect(bx,by,bw,ph);
+  line(x, bx+bw/2, by+1, bx+bw/2, by+ph-1, 'rgba(140,111,53,.45)', 0.2);
+  drawSkelPrint(x, c, bx, by, bw, ph, {color:SH.ink, lw:0.5});
+  panelCaption(x,bx,bw,ph,by,title,sub);
+}
+function overlapPanel(x, o, bx, by, bw, bh){
+  const ph=bh-7;
+  x.strokeStyle=SH.ink18; x.lineWidth=0.25; x.strokeRect(bx,by,bw,ph);
+  line(x, bx+bw/2, by+1, bx+bw/2, by+ph-1, 'rgba(140,111,53,.45)', 0.2);
+  drawSkelPrint(x, o.cA,  bx, by, bw, ph, {color:SH.ink35, lw:0.5, dots:false});
+  drawSkelPrint(x, o.cA2, bx, by, bw, ph, {color:SH.red,   lw:0.5, dash:[1.4,1.0]});
+  panelCaption(x,bx,bw,ph,by,"A vs A\u2032 \uacb9\uce68",'\ud68c\uc0c9 A \u00b7 \ubd89\uc740 \uc810\uc120 A\u2032');
+}
+
+/* \u2500\u2500 \uce21\uc815 \uc0ac\uc9c4: \uc778\uc1c4\uc6a9 \ubc1d\uae30 \uc555\ucd95 + \ud751\ubc31 \u2500\u2500 */
+const _photoCache = new WeakMap();
+function sheetPhoto(cap){
+  if(!cap||!cap.frameImg) return null;
+  if(_photoCache.has(cap)) return _photoCache.get(cap);
+  const src=cap.frameImg;
+  const sc=Math.min(1, 1000/Math.max(src.width,src.height));
+  const c=document.createElement('canvas');
+  c.width=Math.max(1,Math.round(src.width*sc));
+  c.height=Math.max(1,Math.round(src.height*sc));
+  const g=c.getContext('2d');
+  g.drawImage(src,0,0,c.width,c.height);
+  try{
+    const d=g.getImageData(0,0,c.width,c.height), a=d.data;
+    for(let i=0;i<a.length;i+=4){
+      const v=a[i]*0.299+a[i+1]*0.587+a[i+2]*0.114;
+      a[i]=a[i+1]=a[i+2]=Math.round(60+v*0.72);
+    }
+    g.putImageData(d,0,0);
+  }catch(e){}
+  _photoCache.set(cap,c);
+  return c;
+}
+function photoPanel(x, cap, bx, by, bw, bh, title, sub){
+  const ph=bh-7;
+  x.strokeStyle=SH.ink18; x.lineWidth=0.25; x.strokeRect(bx,by,bw,ph);
+  const img=sheetPhoto(cap);
+  if(!img){
+    x.textAlign='center'; x.fillStyle=SH.ink35; KF(x,400,2.6);
+    x.fillText('\uc0ac\uc9c4 \uc5c6\uc74c', bx+bw/2, by+ph/2);
+  }else{
+    const ar=img.width/img.height;
+    let dw=bw-1.6, dh=dw/ar;
+    if(dh>ph-1.6){ dh=ph-1.6; dw=dh*ar; }
+    const dx=bx+(bw-dw)/2, dy=by+(ph-dh)/2;
+    x.save(); x.beginPath(); x.rect(bx,by,bw,ph); x.clip();
+    x.drawImage(img,dx,dy,dw,dh);
+    if(cap.corners&&cap.corners.length===4){
+      x.strokeStyle='rgba(140,111,53,.95)'; x.lineWidth=0.3; x.setLineDash([1.1,0.8]);
+      x.beginPath();
+      cap.corners.forEach((c,i)=>{ const p={x:dx+c.nx*dw, y:dy+c.ny*dh};
+        i? x.lineTo(p.x,p.y) : x.moveTo(p.x,p.y); });
+      x.closePath(); x.stroke(); x.setLineDash([]);
+    }
+    const B=cap.bodyPts||{};
+    const P=k=>B[k]?{x:dx+B[k].nx*dw, y:dy+B[k].ny*dh}:null;
+    const seg=(a,b,col,w)=>{ const A=P(a),C=P(b); if(!A||!C)return;
+      x.strokeStyle=col; x.lineWidth=w; x.lineCap='round';
+      x.beginPath(); x.moveTo(A.x,A.y); x.lineTo(C.x,C.y); x.stroke(); };
+    ['sL hL','sR hR','hL kL','hR kR','kL aL','kR aR','aL toeL','aR toeR']
+      .forEach(p=>{const[a,b]=p.split(' '); seg(a,b,'rgba(255,255,255,.9)',0.45);});
+    ['sL sR','hL hR','kL kR','aL aR','toeL toeR']
+      .forEach(p=>{const[a,b]=p.split(' '); seg(a,b,SH.red,0.6);});
+    POINT_KEYS.forEach(k=>{ const p=P(k); if(!p)return;
+      x.beginPath(); x.arc(p.x,p.y,0.55,0,7); x.fillStyle='#fff'; x.fill();
+      x.strokeStyle=SH.ink; x.lineWidth=0.15; x.stroke(); });
+    x.restore();
+  }
+  panelCaption(x,bx,bw,ph,by,title,sub);
 }
 
 /* ── 몬드리안 (임의 사각형에) ── */
@@ -1742,30 +1830,35 @@ function drawInner1(x,o){
   if(o.instructor){ x.textAlign='right'; x.fillStyle=SH.ink55; KF(x,400,2.4);
     x.fillText('측정 '+o.instructor, SH.W-M, 25); }
 
-  // ── 스켈레톤 3패널 ──
-  const py=31, ph=86, gap=2.2, pw=(IW-gap*2)/3;
-  skelPanel(x, o.cA,  M,             py, pw, ph, 'A · 시작', '다리 편 상태');
-  skelPanel(x, o.cB,  M+pw+gap,      py, pw, ph, 'B · 목표', '다리 구부린 상태');
-  // 3번째 = A vs A′ 겹침
-  const bx=M+(pw+gap)*2;
-  x.strokeStyle=SH.ink18; x.lineWidth=0.25; x.strokeRect(bx,py,pw,ph-7);
-  line(x, bx+pw/2, py+1, bx+pw/2, py+ph-8, 'rgba(140,111,53,.45)', 0.2);
-  drawSkelPrint(x, o.cA,  bx, py, pw, ph-7, {color:SH.ink35, lw:0.5, dots:false});
-  drawSkelPrint(x, o.cA2, bx, py, pw, ph-7, {color:SH.red,   lw:0.5, dash:[1.4,1.0]});
-  x.textAlign='center'; x.fillStyle=SH.red; KF(x,700,2.9);
-  x.fillText("A vs A′ 겹침", bx+pw/2, py+ph-2.6);
-  x.fillStyle=SH.ink55; KF(x,400,2.2);
-  x.fillText('회색 A · 붉은 점선 A′', bx+pw/2, py+ph+0.9);
+  // ── 상단 패널: 측정 사진 + A vs A′ 겹침 ──
+  const py=31, PH=84;
+  if(o.photo==='none'){
+    const gap=2.2, pw=(IW-gap*2)/3;
+    skelPanel(x, o.cA, M,             py, pw, PH, 'A · 시작', '다리 편 상태');
+    skelPanel(x, o.cB, M+pw+gap,      py, pw, PH, 'B · 목표', '다리 구부린 상태');
+    overlapPanel(x, o,  M+(pw+gap)*2, py, pw, PH);
+  }else{
+    const rw=44.5, lw=IW-rw-4;
+    if(o.photo==='AB'){
+      const hh=(PH-3)/2;
+      photoPanel(x, o.rawA, M, py,        lw, hh, 'A · 시작', '매트 4점 보정 + 관절점');
+      photoPanel(x, o.rawB, M, py+hh+3,   lw, hh, 'B · 목표', '다리를 구부린 순간');
+    }else{
+      const cap = o.photo==='B'? o.rawB : o.photo==='A2'? o.rawA2 : o.rawA;
+      const lab = o.photo==='B'? 'B · 목표' : o.photo==='A2'? 'A′ · 복귀' : 'A · 시작';
+      photoPanel(x, cap, M, py, lw, PH, lab, '매트 4점 보정 후 관절점 · 측정 원본');
+    }
+    overlapPanel(x, o, M+lw+4, py, rw, PH);
+  }
 
   // ── A → A′ 변화 ──
-  let y=py+ph+10;
+  let y=121;
   x.textAlign='left'; x.fillStyle=SH.gold; KF(x,700,2.9);
   x.fillText('A → A′ 정렬 변화', M, y);
   x.textAlign='right'; x.fillStyle=SH.ink55; KF(x,400,2.4);
   x.fillText('0에 가까울수록 동작이 몸을 틀지 않았다는 뜻', SH.W-M, y);
   x.textAlign='left';
-  y+=3;
-  line(x, M, y, SH.W-M, y, SH.ink18, 0.3);
+  y+=3; line(x, M, y, SH.W-M, y, SH.ink18, 0.3);
 
   const rows=[['어깨','shoulderTilt',2],['골반','pelvisTilt',2],['무릎','kneeTilt',2],
               ['발','toeTilt',2],['몸통축','centerTilt',3]];
@@ -1784,7 +1877,7 @@ function drawInner1(x,o){
   });
 
   // ── 골반 수직 이탈각 ──
-  y+=25;
+  y=149;
   x.strokeStyle=SH.ink; x.lineWidth=0.4; x.strokeRect(M, y, IW, 18);
   x.textAlign='left'; x.fillStyle=SH.gold; KF(x,700,2.7);
   x.fillText('골반 수직 이탈각 (A → B)', M+4, y+6);
@@ -1794,31 +1887,28 @@ function drawInner1(x,o){
   x.fillText('5° 이내 = 수직 운동 유지', M+4, y+15.2);
   x.textAlign='right';
   if(o.dev==null){ x.fillStyle=SH.ink35; KF(x,900,10); x.fillText('—', SH.W-M-4, y+13.5); }
-  else{
-    x.fillStyle=o.dev>5?SH.red:SH.ink; KF(x,900,11);
-    x.fillText(o.dev.toFixed(1)+'°', SH.W-M-4, y+13.5);
-  }
+  else{ x.fillStyle=o.dev>5?SH.red:SH.ink; KF(x,900,11);
+        x.fillText(o.dev.toFixed(1)+'°', SH.W-M-4, y+13.5); }
 
-  // ── 원본 각도 표 ──
-  y+=24;
+  // ── 측정 각도 원본 (가로 배치) ──
+  y=173;
   x.textAlign='left'; x.fillStyle=SH.gold; KF(x,700,2.7);
   x.fillText('측정 각도 원본', M, y);
+  x.textAlign='right'; x.fillStyle=SH.ink35; KF(x,400,2.1);
+  x.fillText('수평 · 수직 기준 °', SH.W-M, y);
   y+=2.6; line(x, M, y, SH.W-M, y, SH.ink, 0.4);
-  const colX=[M, M+IW*0.46, M+IW*0.64, M+IW*0.82, M+IW];
-  x.fillStyle=SH.ink55; GF(x,600,2.3);
-  ['A','B',"A′"].forEach((h,i)=>{ x.textAlign='right'; x.fillText(h, colX[i+2], y+4.4); });
-  x.textAlign='left'; KF(x,500,2.3); x.fillText('항목 (수평/수직 기준 °)', colX[0], y+4.4);
-  let ry=y+5.6;
-  const all=[['어깨 기울기','shoulderTilt'],['골반 기울기','pelvisTilt'],['무릎 기울기','kneeTilt'],
-             ['발 기울기','toeTilt'],['몸통 중심축','centerTilt'],['하지 축','legTilt']];
-  all.forEach(([l,k])=>{
-    ry+=4.2;
-    line(x, M, ry-3.0, SH.W-M, ry-3.0, SH.ink18, 0.15);
-    x.textAlign='left'; x.fillStyle=SH.ink; KF(x,400,2.5); x.fillText(l, colX[0], ry);
-    [o.mA[k],o.mB[k],o.mA2[k]].forEach((v,i)=>{
+  const cols=[['어깨','shoulderTilt'],['골반','pelvisTilt'],['무릎','kneeTilt'],
+              ['발','toeTilt'],['몸통축','centerTilt']];
+  const labW=14, cw2=(IW-labW)/cols.length;
+  cols.forEach(([l],i)=>{ x.textAlign='right'; x.fillStyle=SH.ink55; KF(x,500,2.3);
+    x.fillText(l, M+labW+cw2*(i+1), y+4.6); });
+  [['A',o.mA],['B',o.mB],['A′',o.mA2]].forEach((row,r)=>{
+    const ry=y+9.6+r*4.6;
+    line(x, M, ry-3.2, SH.W-M, ry-3.2, SH.ink18, 0.15);
+    x.textAlign='left'; x.fillStyle=SH.red; GF(x,600,2.4); x.fillText(row[0], M, ry);
+    cols.forEach(([,k],i)=>{ const v=row[1][k];
       x.textAlign='right'; x.fillStyle=v==null?SH.ink35:SH.ink; GF(x,500,2.5);
-      x.fillText(v==null?'—':((v>0?'+':'')+v.toFixed(1)), colX[i+2], ry);
-    });
+      x.fillText(v==null?'—':((v>0?'+':'')+v.toFixed(1)), M+labW+cw2*(i+1), ry); });
   });
 
   // 푸터
@@ -1827,6 +1917,7 @@ function drawInner1(x,o){
   x.fillText('매트 4점 원근보정 적용 · 변화 추이 확인용이며 의학적 진단이 아닙니다', M, 203.5);
   x.textAlign='right'; GF(x,500,2.1); x.fillText('AXIS', SH.W-M, 203.5);
 }
+
 
 /* ══ 면 3 · 안쪽 2 (회원) ══ */
 function drawInner2(x,o){
@@ -1988,6 +2079,10 @@ buildCheckUI();
 $('segArt').querySelectorAll('button').forEach(b=>{
   b.onclick=()=>{ $('segArt').querySelectorAll('button').forEach(o=>o.classList.remove('on'));
     b.classList.add('on'); sheetState.artPhase=b.dataset.p; renderSheetPreview(); };
+});
+$('segPhoto').querySelectorAll('button').forEach(b=>{
+  b.onclick=()=>{ $('segPhoto').querySelectorAll('button').forEach(o=>o.classList.remove('on'));
+    b.classList.add('on'); sheetState.photo=b.dataset.p; renderSheetPreview(); };
 });
 $('segBg').querySelectorAll('button').forEach(b=>{
   b.onclick=()=>{ $('segBg').querySelectorAll('button').forEach(o=>o.classList.remove('on'));
