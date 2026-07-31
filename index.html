@@ -256,16 +256,14 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
     </div>
 
     <div class="fld">
-      <label>안쪽 1에 넣을 측정 사진</label>
+      <label>안쪽 1 구성</label>
       <div class="seg" id="segPhoto">
-        <button data-p="A" class="on">A · 시작</button>
-        <button data-p="B">B · 목표</button>
-        <button data-p="AB">A + B</button>
-        <button data-p="none">사진 없이</button>
+        <button data-p="A" class="on">사진 3 + 도식 3</button>
+        <button data-p="none">도식만 3</button>
       </div>
       <div style="font-size:11px;color:var(--gray);line-height:1.6;margin-top:8px;">
-        스냅샷 위에 매트 4점과 관절점을 함께 인쇄합니다. 인쇄 잉크를 줄이려고 흑백으로 밝게 변환됩니다.
-        &lsquo;사진 없이&rsquo;를 고르면 A · B · A′ 도식 3분할로 돌아갑니다.
+        윗줄에 A · B · A′ 측정 원본 사진(매트 4점 + 강사 보정점), 아랫줄에 같은 순서의 정렬 도식이 들어갑니다.
+        사진이 너무 어둡거나 회원이 사진을 원치 않으면 &lsquo;도식만 3&rsquo;을 쓰세요. 이때는 세 번째 칸이 A vs A′ 겹침으로 바뀝니다.
       </div>
     </div>
 
@@ -1643,7 +1641,10 @@ function drawSkelPrint(x, c, bx, by, bw, bh, opt){
   if(!c) return;
   opt=opt||{};
   const col=opt.color||SH.ink, dash=opt.dash||[], lw=opt.lw||0.55;
-  const ix=bx+bw*0.06, iy=by+bh*0.03, iw=bw*0.88, ih=bh*0.94;
+  // 보정 좌표는 매트를 정사각(0~1)으로 편 공간이다. 각도도 이 공간에서 계산되므로
+  // 패널 비율에 맞춰 늘이면 그림과 숫자가 어긋난다 → 항상 정사각으로 맞춰 그린다.
+  const side=Math.min(bw*0.88, bh*0.94);
+  const ix=bx+(bw-side)/2, iy=by+(bh-side)/2, iw=side, ih=side;
   const P=k=>c[k]?{x:ix+c[k].x*iw, y:iy+c[k].y*ih}:null;
   const seg=(a,b,w)=>{const A=P(a),B=P(b); if(!A||!B)return;
     x.strokeStyle=col; x.lineWidth=w; x.lineCap='round'; x.setLineDash(dash);
@@ -1830,86 +1831,83 @@ function drawInner1(x,o){
   if(o.instructor){ x.textAlign='right'; x.fillStyle=SH.ink55; KF(x,400,2.4);
     x.fillText('측정 '+o.instructor, SH.W-M, 25); }
 
-  // ── 상단 패널: 측정 사진 + A vs A′ 겹침 ──
-  const py=31, PH=84;
+  const gap=2.2, pw=(IW-gap*2)/3;
+  const cx=i=>M+(pw+gap)*i;
+  const PHASES3=[['A · 시작', o.rawA, o.cA], ['B · 목표', o.rawB, o.cB], ['A′ · 복귀', o.rawA2, o.cA2]];
+
   if(o.photo==='none'){
-    const gap=2.2, pw=(IW-gap*2)/3;
-    skelPanel(x, o.cA, M,             py, pw, PH, 'A · 시작', '다리 편 상태');
-    skelPanel(x, o.cB, M+pw+gap,      py, pw, PH, 'B · 목표', '다리 구부린 상태');
-    overlapPanel(x, o,  M+(pw+gap)*2, py, pw, PH);
+    // 사진 없이 — 도식 3분할 (겹침 포함)
+    x.textAlign='left'; x.fillStyle=SH.gold; KF(x,700,2.5);
+    x.fillText('정렬 도식', M, 31);
+    skelPanel(x, o.cA, cx(0), 35, pw, 84, 'A · 시작', '다리 편 상태');
+    skelPanel(x, o.cB, cx(1), 35, pw, 84, 'B · 목표', '다리 구부린 상태');
+    overlapPanel(x, o,  cx(2), 35, pw, 84);
   }else{
-    const rw=44.5, lw=IW-rw-4;
-    if(o.photo==='AB'){
-      const hh=(PH-3)/2;
-      photoPanel(x, o.rawA, M, py,        lw, hh, 'A · 시작', '매트 4점 보정 + 관절점');
-      photoPanel(x, o.rawB, M, py+hh+3,   lw, hh, 'B · 목표', '다리를 구부린 순간');
-    }else{
-      const cap = o.photo==='B'? o.rawB : o.photo==='A2'? o.rawA2 : o.rawA;
-      const lab = o.photo==='B'? 'B · 목표' : o.photo==='A2'? 'A′ · 복귀' : 'A · 시작';
-      photoPanel(x, cap, M, py, lw, PH, lab, '매트 4점 보정 후 관절점 · 측정 원본');
-    }
-    overlapPanel(x, o, M+lw+4, py, rw, PH);
+    // ① 측정 원본 사진 + 강사 보정점
+    x.textAlign='left'; x.fillStyle=SH.gold; KF(x,700,2.5);
+    x.fillText('측정 원본 · 강사 보정점', M, 31);
+    x.textAlign='right'; x.fillStyle=SH.ink35; KF(x,400,2.1);
+    x.fillText('금색 점선 = 매트 4점', SH.W-M, 31);
+    PHASES3.forEach(([lab,cap],i)=> photoPanel(x, cap, cx(i), 34, pw, 54, lab, ''));
+
+    // ② 정렬 도식
+    x.textAlign='left'; x.fillStyle=SH.gold; KF(x,700,2.5);
+    x.fillText('정렬 도식', M, 92);
+    x.textAlign='right'; x.fillStyle=SH.ink35; KF(x,400,2.1);
+    x.fillText('원근보정 후 · 각도 계산과 동일한 좌표', SH.W-M, 92);
+    PHASES3.forEach(([lab,,c],i)=> skelPanel(x, c, cx(i), 95, pw, 47, lab, ''));
   }
 
-  // ── A → A′ 변화 ──
-  let y=121;
-  x.textAlign='left'; x.fillStyle=SH.gold; KF(x,700,2.9);
-  x.fillText('A → A′ 정렬 변화', M, y);
-  x.textAlign='right'; x.fillStyle=SH.ink55; KF(x,400,2.4);
-  x.fillText('0에 가까울수록 동작이 몸을 틀지 않았다는 뜻', SH.W-M, y);
-  x.textAlign='left';
-  y+=3; line(x, M, y, SH.W-M, y, SH.ink18, 0.3);
-
-  const rows=[['어깨','shoulderTilt',2],['골반','pelvisTilt',2],['무릎','kneeTilt',2],
-              ['발','toeTilt',2],['몸통축','centerTilt',3]];
-  const cw=IW/rows.length;
-  rows.forEach(([l,k,thr],i)=>{
-    const cx=M+cw*i+cw/2;
-    x.textAlign='center'; x.fillStyle=SH.ink55; KF(x,500,2.4); x.fillText(l, cx, y+5.5);
-    const a=o.mA[k], a2=o.mA2[k];
-    if(a==null||a2==null){ x.fillStyle=SH.ink35; KF(x,900,7); x.fillText('—', cx, y+14); return; }
-    const d=a2-a, bad=Math.abs(d)>thr;
-    x.fillStyle=bad?SH.red:SH.ink; KF(x,900,7.4);
-    x.fillText((d>0?'+':'')+d.toFixed(1)+'°', cx, y+14.2);
-    x.fillStyle=SH.ink35; GF(x,400,2.1);
-    x.fillText(a.toFixed(1)+' → '+a2.toFixed(1), cx, y+18.4);
-    if(bad){ line(x, cx-cw*0.28, y+20.6, cx+cw*0.28, y+20.6, SH.red, 0.6); }
-  });
-
-  // ── 골반 수직 이탈각 ──
-  y=149;
-  x.strokeStyle=SH.ink; x.lineWidth=0.4; x.strokeRect(M, y, IW, 18);
-  x.textAlign='left'; x.fillStyle=SH.gold; KF(x,700,2.7);
+  // ── 골반 수직 이탈각 (한 줄) ──
+  let y = (o.photo==='none') ? 128 : 146;
+  x.strokeStyle=SH.ink; x.lineWidth=0.4; x.strokeRect(M, y, IW, 9.5);
+  x.textAlign='left'; x.fillStyle=SH.gold; KF(x,700,2.6);
   x.fillText('골반 수직 이탈각 (A → B)', M+4, y+6);
-  x.fillStyle=SH.ink55; KF(x,400,2.3);
-  x.fillText('발이 고정된 상태에서 골반이 어깨선과 수직으로 밀려났는가', M+4, y+11);
   x.fillStyle=SH.ink35; KF(x,400,2.1);
-  x.fillText('5° 이내 = 수직 운동 유지', M+4, y+15.2);
+  x.fillText('5° 이내 = 수직 운동 유지', M+52, y+6);
   x.textAlign='right';
-  if(o.dev==null){ x.fillStyle=SH.ink35; KF(x,900,10); x.fillText('—', SH.W-M-4, y+13.5); }
-  else{ x.fillStyle=o.dev>5?SH.red:SH.ink; KF(x,900,11);
-        x.fillText(o.dev.toFixed(1)+'°', SH.W-M-4, y+13.5); }
+  if(o.dev==null){ x.fillStyle=SH.ink35; KF(x,900,6); x.fillText('—', SH.W-M-4, y+7); }
+  else{ x.fillStyle=o.dev>5?SH.red:SH.ink; KF(x,900,6.6);
+        x.fillText(o.dev.toFixed(1)+'°', SH.W-M-4, y+7.2); }
 
-  // ── 측정 각도 원본 (가로 배치) ──
-  y=173;
+  // ── 각도 측정값 (A · B · A′ + 변화) ──
+  y = (o.photo==='none') ? 145 : 161;
   x.textAlign='left'; x.fillStyle=SH.gold; KF(x,700,2.7);
-  x.fillText('측정 각도 원본', M, y);
+  x.fillText('각도 측정값', M, y);
   x.textAlign='right'; x.fillStyle=SH.ink35; KF(x,400,2.1);
   x.fillText('수평 · 수직 기준 °', SH.W-M, y);
   y+=2.6; line(x, M, y, SH.W-M, y, SH.ink, 0.4);
-  const cols=[['어깨','shoulderTilt'],['골반','pelvisTilt'],['무릎','kneeTilt'],
-              ['발','toeTilt'],['몸통축','centerTilt']];
-  const labW=14, cw2=(IW-labW)/cols.length;
+
+  const cols=[['어깨','shoulderTilt',2],['골반','pelvisTilt',2],['무릎','kneeTilt',2],
+              ['발','toeTilt',2],['몸통축','centerTilt',3]];
+  const labW=17, cw2=(IW-labW)/cols.length;
+  const colR=i=>M+labW+cw2*(i+1);
   cols.forEach(([l],i)=>{ x.textAlign='right'; x.fillStyle=SH.ink55; KF(x,500,2.3);
-    x.fillText(l, M+labW+cw2*(i+1), y+4.6); });
+    x.fillText(l, colR(i), y+4.6); });
   [['A',o.mA],['B',o.mB],['A′',o.mA2]].forEach((row,r)=>{
-    const ry=y+9.6+r*4.6;
-    line(x, M, ry-3.2, SH.W-M, ry-3.2, SH.ink18, 0.15);
-    x.textAlign='left'; x.fillStyle=SH.red; GF(x,600,2.4); x.fillText(row[0], M, ry);
+    const ry=y+9.8+r*4.4;
+    line(x, M, ry-3.1, SH.W-M, ry-3.1, SH.ink18, 0.15);
+    x.textAlign='left'; x.fillStyle=SH.ink55; GF(x,600,2.4); x.fillText(row[0], M, ry);
     cols.forEach(([,k],i)=>{ const v=row[1][k];
       x.textAlign='right'; x.fillStyle=v==null?SH.ink35:SH.ink; GF(x,500,2.5);
-      x.fillText(v==null?'—':((v>0?'+':'')+v.toFixed(1)), M+labW+cw2*(i+1), ry); });
+      x.fillText(v==null?'—':((v>0?'+':'')+v.toFixed(1)), colR(i), ry); });
   });
+  // 변화 행 (강조)
+  const dy=y+25.5;
+  line(x, M, dy-6, SH.W-M, dy-6, SH.ink, 0.5);
+  x.textAlign='left'; x.fillStyle=SH.red; KF(x,900,2.7); x.fillText('A → A′', M, dy);
+  x.fillStyle=SH.ink35; KF(x,400,2.0); x.fillText('돌아온 정도', M, dy+3.4);
+  cols.forEach(([,k,thr],i)=>{
+    const a=o.mA[k], a2=o.mA2[k];
+    x.textAlign='right';
+    if(a==null||a2==null){ x.fillStyle=SH.ink35; KF(x,900,4.6); x.fillText('—', colR(i), dy+1); return; }
+    const d=a2-a, bad=Math.abs(d)>thr;
+    x.fillStyle=bad?SH.red:SH.ink; KF(x,900,4.8);
+    x.fillText((d>0?'+':'')+d.toFixed(1)+'°', colR(i), dy+1);
+    if(bad) line(x, colR(i)-cw2*0.62, dy+2.6, colR(i), dy+2.6, SH.red, 0.5);
+  });
+  x.textAlign='left'; x.fillStyle=SH.ink35; KF(x,400,2.1);
+  x.fillText('0에 가까울수록 동작이 몸을 틀지 않고 제자리로 돌아왔다는 뜻 · 밑줄 = 기준 초과', M+22, dy+3.4);
 
   // 푸터
   line(x, M, 199, SH.W-M, 199, SH.ink18, 0.3);
