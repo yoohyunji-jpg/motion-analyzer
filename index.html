@@ -124,7 +124,7 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
 <body>
 
 <div id="hdr">
-  <div id="brand">HELLO BODY <span>AXIS</span><small>동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m10</b></small></div>
+  <div id="brand">HELLO BODY <span>AXIS</span><small id="brandSub">동작분석 · Footwork Parallel Arches · <b style="color:#F59E0B;">m11b</b></small></div>
   <div id="stepInd">1 / 4</div>
 </div>
 
@@ -133,21 +133,54 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
   <section class="screen on" id="s1">
     <div class="eyebrow">STEP 1 · UPLOAD</div>
     <h1>측정 영상을 올리세요</h1>
-    <p class="lead">거치대에 iPhone을 고정하고 위에서(탑뷰) 촬영한 영상을 올립니다.<br>실시간 연결이 없어 안정적입니다.</p>
+
+    <div class="fld" style="margin-bottom:14px;">
+      <label>측정 동작 · 평면</label>
+      <div class="seg" id="segPreset">
+        <button data-k="footwork" class="on">Footwork · 탑뷰</button>
+        <button data-k="armpull">Arm Pull · 측면</button>
+      </div>
+      <div style="font-size:11px;color:var(--gray);line-height:1.6;margin-top:8px;" id="presetNote"></div>
+    </div>
+
+    <div class="fld" style="margin-bottom:14px;">
+      <label>기준 사각형 실측 (cm) — <span id="refNameLbl">리포머 캐리지</span></label>
+      <div class="row2">
+        <input type="number" id="dimW" value="60" min="5" step="1" placeholder="가로 cm">
+        <input type="number" id="dimH" value="180" min="5" step="1" placeholder="세로 cm">
+      </div>
+      <div style="font-size:11px;color:var(--gray);line-height:1.6;margin-top:8px;">
+        줄자로 실제 길이를 재서 넣으세요. 이 값이 없으면 사각형을 정사각으로 펴게 되고,
+        긴 쪽이 늘어나 <b>각도가 실제보다 작게</b> 나옵니다.
+      </div>
+    </div>
+
+    <p class="lead" id="shootLead">거치대에 iPhone을 고정하고 위에서(탑뷰) 촬영한 영상을 올립니다.<br>실시간 연결이 없어 안정적입니다.</p>
     <div class="drop" id="drop">
       <div class="ic">🎬</div>
       <div class="t">영상 선택 / 촬영</div>
       <div class="s">탭하여 갤러리에서 고르거나 촬영</div>
     </div>
     <input type="file" id="file" accept="video/*" style="display:none">
+
+    <div class="drop" id="dropPhoto" style="margin-top:10px;border-style:solid;">
+      <div class="ic">🖼️</div>
+      <div class="t">사진 3장으로 측정</div>
+      <div class="s">A · B · A′ 순서로 사진 3장을 한 번에 선택</div>
+    </div>
+    <input type="file" id="filePhoto" accept="image/*" multiple style="display:none">
+    <div style="font-size:11px;color:var(--gray);line-height:1.6;margin:8px 0 12px;">
+      영상이 안 열리거나 앱 안에서 보고 있을 때 쓰세요. 영상 디코딩을 거치지 않아 확실히 열립니다.
+      측정·결과지는 영상과 똑같이 나옵니다.
+    </div>
+
+    <div id="mpStat" style="font-size:11px;color:var(--gray);text-align:center;margin:-4px 0 12px;">준비 중…</div>
+    <div id="envWarn" style="display:none;font-size:11px;line-height:1.6;color:#F0C27F;
+      background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.35);
+      border-radius:10px;padding:10px 12px;margin-bottom:12px;"></div>
     <div class="guide">
       <h4>촬영 방법</h4>
-      <ol>
-        <li>매트 <b>전체가 보이게 위에서</b> 촬영 (탑뷰)</li>
-        <li>매트 네 모서리가 프레임에 또렷하게</li>
-        <li>머리부터 발가락까지 전신이 매트 위에</li>
-        <li>5초 이상 자세를 유지</li>
-      </ol>
+      <ol id="shootList"></ol>
     </div>
   </section>
 
@@ -172,10 +205,12 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
       <canvas id="cv2" style="display:block;max-width:100%;max-height:62vh;width:auto;height:auto;touch-action:none;cursor:crosshair;"></canvas>
     </div>
     <div id="chips" style="display:none;"></div>
-    <button class="btn gold" id="calibNext" disabled>매트 완료 — 몸 포인트 확인 →</button>
-    <button class="btn" id="calibReset">모서리 다시 찍기</button>
+    <button class="btn gold" id="calibNext" disabled>기준 완료 — 몸 포인트 확인 →</button>
+    <button class="btn" id="calibReset">기준 다시 찍기</button>
+    <div id="refWarn" class="hint" style="display:none;background:rgba(168,56,43,.14);border-color:rgba(168,56,43,.5);color:#F0A89F;"></div>
     <button class="btn red" id="runAnalyze" style="display:none;">분석 실행</button>
     <button class="btn ghost" id="backTo2">← 프레임 다시</button>
+    <div id="photoBadge" style="display:none;font-size:11px;color:var(--gray);text-align:center;margin-top:-4px;"></div>
   </section>
 
   <!-- 4. 결과 -->
@@ -309,6 +344,14 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
   </section>
 </div>
 
+<div id="errBar" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9999;
+  background:#A8382B;color:#fff;padding:12px 14px;font-size:13px;line-height:1.5;
+  font-family:-apple-system,sans-serif;box-shadow:0 -4px 20px rgba(0,0,0,.4);">
+  <b id="errTitle">문제가 생겼습니다</b>
+  <div id="errMsg" style="margin-top:4px;opacity:.92;word-break:break-word;"></div>
+  <button id="errClose" style="margin-top:8px;background:rgba(255,255,255,.18);border:none;
+    color:#fff;padding:6px 12px;border-radius:7px;font-size:12px;">닫기</button>
+</div>
 <div id="load"><div class="spin"></div><div id="loadTxt">준비 중…</div></div>
 <video id="hiddenVideo" playsinline muted style="display:none;"></video>
 
@@ -321,17 +364,137 @@ h1{font-size:23px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px;line-h
    실시간 연결 없음. 전부 로컬. 안정적.
    ══════════════════════════════════════════════ */
 const $ = id => document.getElementById(id);
+
+/* 어떤 오류든 화면에 띄운다 — 조용히 멈추는 것이 가장 고치기 어렵다 */
+function showErr(title, msg){
+  const b=$('errBar'); if(!b){ alert(title+'\n'+msg); return; }
+  $('errTitle').textContent=title;
+  $('errMsg').textContent=msg;
+  b.style.display='block';
+  const c=$('errClose'); if(c) c.onclick=()=>{ b.style.display='none'; };
+}
+window.addEventListener('error', e=>{
+  showErr('스크립트 오류', (e.message||'')+'  ('+(e.filename||'').split('/').pop()+':'+(e.lineno||'?')+')');
+});
+window.addEventListener('unhandledrejection', e=>{
+  showErr('처리되지 않은 오류', (e.reason&&e.reason.message)||String(e.reason));
+});
+
 const V = $('hiddenVideo');
 
-const LM = { nose:0, eyeInL:1, eyeInR:4, mouthL:9, mouthR:10,
-  sL:11, sR:12, hL:23, hR:24, kL:25, kR:26,
+const LM = { nose:0, eyeInL:1, eyeInR:4, earL:7, earR:8, mouthL:9, mouthR:10,
+  sL:11, sR:12, elbL:13, elbR:14, wrL:15, wrR:16,
+  hL:23, hR:24, kL:25, kR:26,
   aL:27, aR:28, heelL:29, heelR:30, toeL:31, toeR:32 };
-const POINT_KEYS = ['crown','brow','nose','chin','sL','sR','hL','hR','kL','kR','aL','aR','toeL','toeR'];
-const POINT_LABEL = {crown:'정수리',brow:'미간',nose:'코',chin:'턱끝',
-  sL:'어깨L',sR:'어깨R',hL:'골반L',hR:'골반R',kL:'무릎L',kR:'무릎R',
-  aL:'발목L',aR:'발목R',toeL:'발가락L',toeR:'발가락R'};
-// 얼굴점은 MediaPipe에 직접 없어 추정 (편집 가능)
-const FACE_KEYS = ['crown','brow','chin'];
+
+/* ══════════════════════════════════════════════
+   측정 프리셋 — 동작마다 "보는 평면"이 다르다.
+   coronal(관상면) = 좌우 대칭을 본다 · 탑뷰
+   sagittal(시상면) = 앞뒤 정렬을 본다 · 측면
+   ══════════════════════════════════════════════ */
+const PRESETS = {
+  footwork: {
+    id:'footwork',
+    title:'Footwork · Parallel Arches',
+    sheetTitle:'FOOTWORK · PARALLEL ARCHES',
+    plane:'coronal', planeKo:'관상면 · 좌우 대칭',
+    refMode:'corners',
+    refName:'리포머 캐리지',
+    dimW:60, dimH:180,
+    note:'누워서 발로 미는 동작. 위에서 찍어 좌우 대칭과 무릎이 안으로 모이는지를 봅니다.',
+    shoot:['캐리지 <b>전체가 보이게 위에서</b> 촬영 (탑뷰)',
+           '캐리지 네 모서리가 프레임에 또렷하게',
+           '머리부터 발가락까지 전신이 들어오게',
+           '측정일에는 <b>몸에 붙는 상하의</b> — 헐렁한 옷은 관절점이 옷을 따라 움직입니다'],
+    keys:['crown','brow','nose','chin','sL','sR','hL','hR','kL','kR','aL','aR','toeL','toeR'],
+    labels:{crown:'정수리',brow:'미간',nose:'코',chin:'턱끝',
+      sL:'어깨L',sR:'어깨R',hL:'골반L',hR:'골반R',kL:'무릎L',kR:'무릎R',
+      aL:'발목L',aR:'발목R',toeL:'발가락L',toeR:'발가락R'},
+    faceKeys:['crown','brow','chin'],
+    bones:['sL hL','sR hR','hL kL','hR kR','kL aL','kR aR','aL toeL','aR toeR'],
+    rails:['sL sR','hL hR','kL kR','aL aR','toeL toeR'],
+    face:['crown brow','brow nose','nose chin'],
+    railColors:{'sL sR':'#E8291C','hL hR':'#E8291C','kL kR':'#FF9500','aL aR':'#00CED1','toeL toeR':'#20B2AA'},
+    plumb:['hL','hR'],
+    phaseLabel:{A:'A · 시작 (다리 편)', B:'B · 목표 (다리 구부린)', A2:"A′ · 복귀 (다리 편)"},
+    phaseShort:{A:'시작(다리 편)', B:'목표(다리 구부린)', A2:'복귀(다리 편)'},
+    phaseCap:{A:'A · 시작', B:'B · 목표', A2:'A′ · 복귀'},
+    phaseSub:{A:'다리 편 상태', B:'다리 구부린 상태', A2:'다시 편 상태'},
+    // 결과지 표 — [라벨, 키, A→A′ 허용폭, 종류]
+    cols:[['어깨','shoulderTilt',2,'dev'],['골반','pelvisTilt',2,'dev'],
+          ['무릎','kneeTilt',2,'dev'],['발','toeTilt',2,'dev'],
+          ['무릎폭비','kneeRatio',8,'pct']],
+    checks:['발가락이 정면을 유지했다','무릎이 좌우로 흔들리지 않았다',
+            '골반이 좌우 수평을 지켰다','상체가 따라 틀어지지 않았다'],
+    hero:{label:'골반 수직 이탈각 (A → B)', hint:'5° 이내 = 수직 운동 유지', thr:5, fn:'pelvis'}
+  },
+
+  armpull: {
+    id:'armpull',
+    title:'Seated Arm Pull',
+    sheetTitle:'SEATED ARM PULL · 측면',
+    plane:'sagittal', planeKo:'시상면 · 앞뒤 정렬',
+    refMode:'lines',
+    refName:'리포머 측면 프레임',
+    dimW:200, dimH:100,
+    note:'박스에 앉아 팔로 당기는 동작. 옆에서 찍어 당길 때 상체가 뒤로 넘어가는지, 머리가 앞으로 나가는지를 봅니다.',
+    shoot:['회원의 <b>옆에서</b> 촬영 — 기구 측면 프레임이 함께 보이게',
+           '카메라는 가슴 높이, 기구와 수직이 되게',
+           '<b>거울 반사가 화면에 들어오지 않게</b> — 사람이 둘로 잡힙니다',
+           '측정일에는 <b>몸에 붙는 상하의</b> — 헐렁한 옷은 관절점이 옷을 따라 움직입니다'],
+    keys:['crown','ear','nose','sh','elb','wr','hip','kn','ank'],
+    labels:{crown:'정수리',ear:'귀',nose:'코',sh:'어깨',elb:'팔꿈치',wr:'손목',
+      hip:'골반',kn:'무릎',ank:'발목'},
+    faceKeys:['crown'],
+    bones:['crown ear','ear sh','sh elb','elb wr','sh hip','hip kn','kn ank'],
+    rails:['ear sh','sh hip'],
+    face:['ear nose'],
+    railColors:{'ear sh':'#E8291C','sh hip':'#E8291C'},
+    plumb:['hip'],
+    phaseLabel:{A:'A · 시작 (팔 편)', B:'B · 목표 (당긴 끝)', A2:"A′ · 복귀 (팔 편)"},
+    phaseShort:{A:'시작(팔 편)', B:'목표(끝까지 당긴)', A2:'복귀(팔 편)'},
+    phaseCap:{A:'A · 시작', B:'B · 당긴 끝', A2:'A′ · 복귀'},
+    phaseSub:{A:'팔 편 상태', B:'끝까지 당긴 상태', A2:'다시 편 상태'},
+    cols:[['머리','headFwd',3,'dev'],['상체','trunkTilt',3,'dev'],
+          ['고관절','hipAngle',5,'abs'],['무릎','kneeFlex',5,'abs'],
+          ['팔꿈치','elbowAngle',8,'abs']],
+    checks:['당길 때 상체가 뒤로 넘어가지 않았다','어깨가 귀 쪽으로 올라가지 않았다',
+            '머리가 앞으로 밀려나오지 않았다','골반이 뒤로 눕지 않고 앉은 높이를 지켰다'],
+    hero:{label:'상체 전후 이동 (A → B)', hint:'3° 이내 = 팔만으로 당김', thr:3, fn:'trunk'}
+  }
+};
+
+let MODE = PRESETS.footwork;
+let POINT_KEYS = MODE.keys.slice();
+let POINT_LABEL = MODE.labels;
+let FACE_KEYS = MODE.faceKeys.slice();
+let REF_W = MODE.dimW, REF_H = MODE.dimH;   // cm 실측
+const curAR = ()=> (REF_W>0 ? REF_H/REF_W : 1);
+
+function applyPreset(key){
+  MODE = PRESETS[key] || PRESETS.footwork;
+  POINT_KEYS = MODE.keys.slice();
+  POINT_LABEL = MODE.labels;
+  FACE_KEYS = MODE.faceKeys.slice();
+  REF_W = MODE.dimW; REF_H = MODE.dimH;
+  Object.assign(PHASE_LABEL, MODE.phaseLabel);
+  SHEET_CHECKS.length=0; MODE.checks.forEach(c=>SHEET_CHECKS.push(c));
+  sheetState.checks = MODE.checks.map(()=>false);
+  const q=id=>document.getElementById(id);
+  if(q('dimW')) q('dimW').value = REF_W;
+  if(q('dimH')) q('dimH').value = REF_H;
+  if(q('refNameLbl')) q('refNameLbl').textContent = MODE.refName;
+  if(q('presetNote')) q('presetNote').textContent = MODE.note;
+  if(q('brandSub')) q('brandSub').innerHTML =
+    '동작분석 · '+MODE.title+' · <b style="color:#F59E0B;">m11b</b>';
+  if(q('shootList')) q('shootList').innerHTML = MODE.shoot.map(t=>'<li>'+t+'</li>').join('');
+  if(q('shootLead')) q('shootLead').innerHTML =
+    (MODE.plane==='sagittal'
+      ? '회원의 <b>옆에서</b> 촬영한 영상을 올립니다. 이 동작의 변화는 앞뒤 평면에서 일어납니다.'
+      : '거치대에 iPhone을 고정하고 <b>위에서(탑뷰)</b> 촬영한 영상을 올립니다.');
+  if(q('moveName')) q('moveName').textContent = MODE.title;
+  if(typeof buildCheckUI==='function') buildCheckUI();
+}
 
 let pose=null, frameImg=null;      // 선택된 프레임 이미지 (ImageBitmap/canvas)
 let corners=[];                    // 매트 4점 {nx,ny} (좌상,우상,우하,좌하)
@@ -345,7 +508,37 @@ let calibPhaseIdx=0;               // 몸 포인트 보정 중인 페이즈
 const captured={A:null, B:null, A2:null};  // {frameImg, corners, bodyPts, metrics}
 function curPhase(){ return PHASES[phaseIdx]; }
 let selChip=null;
+let photoMode=false;          // 사진 3장으로 들어왔는가 (영상 없음)
 const CORNER_LABEL=['좌상','우상','우하','좌하'];
+
+/* ── 선 4개로 기준 사각형 만들기 (모서리가 화면에 안 보일 때) ──
+   수평 2 + 수직 2를 긋고 그 교점 4개를 쓴다.
+   모서리가 화면 밖이거나 가려져 있어도 되고, 눈대중 탭보다 정확하다. */
+let linePts=[];                       // 찍는 중인 점 (최대 8)
+const LINE_LABEL=['수평선 ① 위 (기구 상단 바)','수평선 ② 아래 (기구 하단 프레임)',
+                  '수직선 ① 앞 (기구 앞쪽 기둥·다리)','수직선 ② 뒤 (기구 뒤쪽 기둥·다리)'];
+const LINE_COLOR=['#A3E635','#A3E635','#38BDF8','#38BDF8'];
+function lineCount(){ return Math.floor(linePts.length/2); }
+function cornersFromLines(){
+  if(linePts.length<8) return null;
+  const H1=[linePts[0],linePts[1]], H2=[linePts[2],linePts[3]];
+  const V1=[linePts[4],linePts[5]], V2=[linePts[6],linePts[7]];
+  const pts=[ lineIntersect(H1[0],H1[1],V1[0],V1[1]),
+              lineIntersect(H1[0],H1[1],V2[0],V2[1]),
+              lineIntersect(H2[0],H2[1],V2[0],V2[1]),
+              lineIntersect(H2[0],H2[1],V1[0],V1[1]) ];
+  if(pts.some(p=>!p)) return null;
+  return orderQuad(pts);
+}
+/* 교점이 화면에서 너무 멀면 손 떨림이 크게 증폭된다 — 경고 */
+function refQualityWarning(cs){
+  if(!cs) return '선 두 쌍이 거의 평행합니다. 교점이 생기지 않아요. 더 비스듬한 요소를 고르세요.';
+  const far=cs.filter(p=>p.nx<-1.2||p.nx>2.2||p.ny<-1.2||p.ny>2.2).length;
+  if(far) return '교점 '+far+'개가 화면에서 많이 벗어났습니다. 선이 거의 평행하다는 뜻이라 점이 1픽셀만 흔들려도 크게 움직입니다. 화면 안이나 가까이에서 만나는 요소로 바꾸세요.';
+  const w=Math.abs(cs[1].nx-cs[0].nx), h=Math.abs(cs[3].ny-cs[0].ny);
+  if(w<0.12||h<0.12) return '기준 사각형이 너무 작습니다. 화면에서 더 넓게 벌어진 요소를 고르세요.';
+  return '';
+}
 
 function go(n){
   [1,2,3,4,5,6].forEach(i=>$('s'+i).classList.toggle('on', i===n));
@@ -355,23 +548,81 @@ function go(n){
 const load=(on,txt)=>{ $('load').classList.toggle('on',on); if(txt)$('loadTxt').textContent=txt; };
 
 /* ── MediaPipe 초기화 ── */
+/* MediaPipe는 CDN에서 받아온다. 아직 안 왔거나 네트워크가 막히면 Pose가 없다.
+   예전에는 여기서 스크립트 전체가 멈춰 버튼이 하나도 안 먹었다 → 반드시 감싼다. */
 function initPose(){
-  pose=new Pose({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${f}`});
-  pose.setOptions({modelComplexity:1, smoothLandmarks:false,
-    minDetectionConfidence:0.5, minTrackingConfidence:0.5});
+  if(pose) return true;
+  if(typeof Pose === 'undefined') return false;
+  try{
+    pose=new Pose({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${f}`});
+    pose.setOptions({modelComplexity:1, smoothLandmarks:false,
+      minDetectionConfidence:0.5, minTrackingConfidence:0.5});
+    return true;
+  }catch(e){ pose=null; return false; }
+}
+function poseStatus(){
+  const el=$('mpStat'); if(!el) return;
+  if(pose){ el.textContent='자동 관절 감지 준비됨'; el.style.color='var(--gray)'; }
+  else { el.textContent='자동 관절 감지 모듈을 아직 못 받았습니다 — 네트워크 확인 후 새로고침하세요. 영상 선택·프레임 고르기는 그대로 됩니다.';
+         el.style.color='#D98A7F'; }
 }
 initPose();
+// CDN이 늦게 도착할 수 있으므로 몇 초간 재시도
+(function retryPose(n){
+  if(pose){ poseStatus(); return; }
+  if(n<=0){ poseStatus(); return; }
+  setTimeout(()=>{ initPose(); retryPose(n-1); }, 500);
+})(20);
 
 /* ── STEP 1: 업로드 ── */
 $('drop').onclick = () => $('file').click();
+/* 앱 안의 미리보기 창(인앱 웹뷰)인지 추정 — 여기서는 영상 디코딩이 막히는 경우가 많다 */
+function isInAppWebView(){
+  const ua=navigator.userAgent||'';
+  const iOS=/iPhone|iPad|iPod/.test(ua);
+  if(!iOS) return /FBAN|FBAV|Instagram|Line|KAKAOTALK|NAVER/i.test(ua);
+  // iOS에서 Safari 본체는 UA에 'Safari'를 포함한다. 인앱 웹뷰는 보통 빠져 있다.
+  return !/Safari/.test(ua);
+}
+function envCheck(){
+  const el=$('envWarn'); if(!el) return;
+  if(isInAppWebView()){
+    el.innerHTML='지금 <b>앱 안의 미리보기 창</b>에서 열고 계신 것 같습니다. '+
+      '여기서는 영상 디코딩이 막히는 경우가 많습니다.<br>'+
+      '오른쪽 위 ··· → <b>Safari로 열기</b>(또는 공유 → Safari)로 열면 영상이 정상 동작합니다. '+
+      '지금 그대로 쓰시려면 아래 <b>사진 3장</b>으로 측정하세요.';
+    el.style.display='block';
+  }
+}
+envCheck();
+
+/* MediaError 코드를 사람 말로 */
+function mediaErrText(){
+  const e=V.error; if(!e) return '';
+  return {1:'재생이 중단됨', 2:'네트워크 오류',
+          3:'디코딩 실패 — 이 기기/브라우저가 이 코덱을 못 풉니다',
+          4:'지원하지 않는 형식'}[e.code] || ('코드 '+e.code);
+}
+
 $('file').addEventListener('change', async e=>{
   const f=e.target.files[0]; if(!f) return;
   load(true,'영상 불러오는 중…');
   V.src=URL.createObjectURL(f);
   V.muted=true; V.playsInline=true;
+  V.preload='auto';
+  try{ V.load(); }catch(_){}
   try{
-    await new Promise((res,rej)=>{ V.onloadedmetadata=res; V.onerror=()=>rej(new Error('영상 로드 실패'));
-      setTimeout(()=>rej(new Error('시간 초과')),15000); });
+    // 성공 신호를 하나로 좁히지 않는다 — 기기마다 먼저 오는 이벤트가 다르다
+    await new Promise((res,rej)=>{
+      let done=false;
+      const ok=()=>{ if(done)return; if(V.readyState>=1 || (V.duration&&!isNaN(V.duration))){ done=true; res(); } };
+      ['loadedmetadata','loadeddata','canplay','durationchange'].forEach(ev=>V.addEventListener(ev, ok));
+      V.onerror=()=>{ if(done)return; done=true;
+        rej(new Error('디코딩 실패'+(mediaErrText()?' ('+mediaErrText()+')':''))); };
+      const poll=setInterval(()=>{ ok(); if(done) clearInterval(poll); }, 300);
+      setTimeout(()=>{ clearInterval(poll); if(!done){ done=true;
+        rej(new Error('20초 안에 영상이 열리지 않았습니다')); } },20000);
+    });
     // iOS: 프레임 디코딩을 깨우기 위해 잠깐 재생 후 정지
     try{ await V.play(); await new Promise(r=>setTimeout(r,150)); V.pause(); }catch{}
     load(false);
@@ -379,11 +630,67 @@ $('file').addEventListener('change', async e=>{
     // 동작 분석: 페이즈 초기화
     phaseIdx=0; calibPhaseIdx=0; captured.A=null; captured.B=null; captured.A2=null;
     corners=[]; bodyPts={}; selChip=null;
+    photoMode=false;
     updatePhaseUI();
     go(2);
   }catch(err){ load(false);
-    alert('영상을 불러오지 못했습니다: '+err.message+
-      '\n\niPhone 기본 카메라(.mov/HEVC)는 호환이 어려울 수 있습니다.\n설정 → 카메라 → 포맷 → "높은 호환성"으로 촬영하거나, .mp4로 변환 후 시도하세요.'); }
+    const mb=(f.size/1048576).toFixed(1);
+    const diag = `${err.message} · 파일: ${f.type||'형식불명'} ${mb}MB`;
+    const advice = isInAppWebView()
+      ? ' · 앱 안의 미리보기 창에서는 영상이 자주 막힙니다. Safari로 열거나, 아래 사진 3장 방식을 쓰세요.'
+      : ' · iPhone 기본 카메라(.mov/HEVC)는 호환이 어려울 수 있습니다. 설정 → 카메라 → 포맷 → "높은 호환성"으로 촬영하거나, 사진 3장 방식을 쓰세요.';
+    showErr('영상을 불러오지 못했습니다', diag + advice);
+  }
+});
+
+/* ══════════════════════════════════════════════
+   사진 3장 입력 — 영상 디코딩을 아예 건너뛴다.
+   A·B·A′는 어차피 정지 프레임이라 측정에 손실이 없다.
+   ══════════════════════════════════════════════ */
+$('dropPhoto').onclick = () => $('filePhoto').click();
+$('filePhoto').addEventListener('change', async e=>{
+  const fs=[...e.target.files];
+  if(!fs.length) return;
+  if(fs.length!==3){
+    showErr('사진은 3장이어야 합니다',
+      `지금 ${fs.length}장을 고르셨습니다. ${MODE.phaseShort.A} · ${MODE.phaseShort.B} · ${MODE.phaseShort.A2} 순서로 3장을 함께 선택하세요.`);
+    e.target.value=''; return;
+  }
+  load(true,'사진 불러오는 중…');
+  try{
+    // 촬영 시각 순 — 연속 촬영이면 그대로 A·B·A′가 된다.
+    // 시각을 못 읽으면 파일명으로 보조 정렬.
+    const allTimed = fs.every(f=>f.lastModified);
+    if(allTimed) fs.sort((a,b)=>a.lastModified-b.lastModified);
+    else fs.sort((a,b)=>a.name.localeCompare(b.name,'en',{numeric:true}));
+    const imgs=[];
+    for(const f of fs){
+      const url=URL.createObjectURL(f);
+      const img=await new Promise((res,rej)=>{
+        const im=new Image();
+        im.onload=()=>res(im);
+        im.onerror=()=>rej(new Error(`'${f.name}' 을(를) 열지 못했습니다`));
+        im.src=url;
+        setTimeout(()=>rej(new Error(`'${f.name}' 읽기 시간 초과`)),15000);
+      });
+      // 캔버스로 복사해 두면 이후 단계가 영상 프레임과 완전히 같아진다
+      const cvp=document.createElement('canvas');
+      cvp.width=img.naturalWidth||img.width; cvp.height=img.naturalHeight||img.height;
+      cvp.getContext('2d').drawImage(img,0,0);
+      imgs.push(cvp);
+    }
+    phaseIdx=0; calibPhaseIdx=0;
+    corners=[]; bodyPts={}; selChip=null;
+    photoMode=true;
+    PHASES.forEach((p,i)=>{ captured[p]={frameImg:imgs[i], corners:null, bodyPts:null, metrics:null}; });
+    load(false);
+    startCalibration();
+    showErr('사진 3장을 '+(allTimed?'촬영 시각':'파일 이름')+' 순으로 배정했습니다',
+      `${fs.map(f=>f.name).join('  →  ')}  (${MODE.phaseShort.A} · ${MODE.phaseShort.B} · ${MODE.phaseShort.A2}) · 순서가 다르면 '← 처음으로'를 눌러 다시 고르세요.`);
+  }catch(err){
+    load(false);
+    showErr('사진을 불러오지 못했습니다', err.message);
+  }
 });
 
 /* ── STEP 2: 프레임 선택 ── */
@@ -458,22 +765,55 @@ function startCalibration(){
 const cv2=$('cv2'), cx2=cv2.getContext('2d');
 let calibMode='corners';   // 'corners' → 'points'
 
+function updatePhotoBadge(){
+  const el=$('photoBadge'); if(!el) return;
+  if(!photoMode){ el.style.display='none'; return; }
+  el.textContent='사진 3장 모드 · 지금 보정 중: '+PHASE_LABEL[PHASES[calibPhaseIdx]]
+    +' · 순서가 틀렸으면 위 버튼으로 처음으로';
+  el.style.display='block';
+  $('backTo2').textContent='← 사진 다시 고르기';
+}
 function enterCalib(){
-  calibMode='corners';
-  $('calibTitle').textContent='매트 네 모서리를 찍으세요';
+  updatePhotoBadge();
+  calibMode = (MODE.refMode==='lines') ? 'lines' : 'corners';
+  linePts=[]; corners=[];
+  $('calibTitle').textContent = (calibMode==='lines')
+    ? '기준선 4개를 그으세요'
+    : MODE.refName+' 네 모서리를 찍으세요';
   $('calibHint').className='hint gold';
   $('chips').style.display='none';
   $('calibNext').style.display='block'; $('calibNext').disabled=true;
   $('calibReset').style.display='block';
   $('runAnalyze').style.display='none';
+  $('refWarn').style.display='none';
   updateCalibHint();
   drawCalib();
 }
 function updateCalibHint(){
+  const warn=$('refWarn');
   if(calibMode==='corners'){
     const i=corners.length;
-    if(i<4){ $('calibN').textContent=i+1; $('calibMsg').innerHTML=`매트 <b>${CORNER_LABEL[i]}</b> 모서리를 탭하세요`; }
-    else { $('calibN').textContent='✓'; $('calibMsg').textContent='네 모서리 완료 — 다음으로'; $('calibNext').disabled=false; }
+    if(i<4){ $('calibN').textContent=i+1;
+      $('calibMsg').innerHTML=`${MODE.refName} <b>${CORNER_LABEL[i]}</b> 모서리를 탭하세요`; }
+    else { $('calibN').textContent='✓'; $('calibMsg').textContent='네 모서리 완료 — 다음으로';
+      $('calibNext').disabled=false; }
+    warn.style.display='none';
+    return;
+  }
+  if(calibMode==='lines'){
+    const n=linePts.length, li=Math.floor(n/2), half=n%2;
+    if(li<4){
+      $('calibN').textContent=li+1;
+      $('calibMsg').innerHTML=`<b>${LINE_LABEL[li]}</b> — ${half? '끝점을 탭하세요':'시작점을 탭하세요'}`;
+      $('calibNext').disabled=true; warn.style.display='none';
+    }else{
+      const cs=cornersFromLines();
+      const msg=refQualityWarning(cs);
+      $('calibN').textContent = msg? '!' : '✓';
+      $('calibMsg').textContent = msg? '기준 사각형을 다시 잡으세요' : '네 교점 완료 — 다음으로';
+      if(msg){ warn.textContent=msg; warn.style.display='block'; $('calibNext').disabled=true; }
+      else { warn.style.display='none'; $('calibNext').disabled=false; corners=cs; }
+    }
   }
 }
 
@@ -482,7 +822,27 @@ function drawCalib(){
   cv2.width=frameImg.width; cv2.height=frameImg.height;
   cx2.drawImage(frameImg,0,0);
   const W=cv2.width,H=cv2.height;
-  // 매트 사각형
+  // 기준선 (선 모드)
+  if(calibMode==='lines' && linePts.length){
+    const LW=Math.max(W/320,2);
+    for(let i=0;i<4;i++){
+      const a=linePts[i*2], b=linePts[i*2+1];
+      if(!a) break;
+      cx2.fillStyle=LINE_COLOR[i];
+      cx2.beginPath(); cx2.arc(a.nx*W,a.ny*H,Math.max(W/110,6),0,7); cx2.fill();
+      if(!b) break;
+      cx2.beginPath(); cx2.arc(b.nx*W,b.ny*H,Math.max(W/110,6),0,7); cx2.fill();
+      // 선을 화면 끝까지 연장해서 보여준다 (교점이 어디 생기는지 눈으로 확인)
+      const dx=b.nx-a.nx, dy=b.ny-a.ny, L=Math.hypot(dx,dy)||1;
+      const ex=dx/L*4, ey=dy/L*4;
+      cx2.strokeStyle=LINE_COLOR[i]; cx2.lineWidth=LW; cx2.setLineDash([10,6]);
+      cx2.beginPath();
+      cx2.moveTo((a.nx-ex)*W,(a.ny-ey)*H);
+      cx2.lineTo((b.nx+ex)*W,(b.ny+ey)*H);
+      cx2.stroke(); cx2.setLineDash([]);
+    }
+  }
+  // 기준 사각형
   if(corners.length){
     cx2.strokeStyle='rgba(245,158,11,.95)'; cx2.lineWidth=Math.max(W/300,2); cx2.setLineDash([12,7]);
     cx2.beginPath();
@@ -505,19 +865,10 @@ function drawBodyPts(ctx,W,H,editable){
     ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';
     ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();};
   const LW=Math.max(W/250,3);
-  seg('sL','sR','rgba(232,41,28,.95)',LW);
-  seg('hL','hR','rgba(232,41,28,.95)',LW);
-  seg('kL','kR','rgba(255,149,0,.9)',LW);
-  seg('aL','aR','rgba(0,206,209,.9)',LW);
-  seg('toeL','toeR','rgba(32,178,170,.9)',LW);
-  seg('sL','hL','rgba(255,255,255,.4)',LW*0.6);seg('sR','hR','rgba(255,255,255,.4)',LW*0.6);
-  seg('hL','kL','rgba(255,255,255,.4)',LW*0.6);seg('hR','kR','rgba(255,255,255,.4)',LW*0.6);
-  seg('kL','aL','rgba(255,255,255,.4)',LW*0.6);seg('kR','aR','rgba(255,255,255,.4)',LW*0.6);
-  seg('aL','toeL','rgba(255,255,255,.4)',LW*0.6);seg('aR','toeR','rgba(255,255,255,.4)',LW*0.6);
-  // 얼굴 세로선 (정수리→미간→코→턱끝)
-  seg('crown','brow','rgba(34,197,94,.8)',LW*0.7);
-  seg('brow','nose','rgba(34,197,94,.8)',LW*0.7);
-  seg('nose','chin','rgba(34,197,94,.8)',LW*0.7);
+  MODE.bones.forEach(p=>{const[a,b]=p.split(' '); seg(a,b,'rgba(255,255,255,.4)',LW*0.6);});
+  MODE.rails.forEach(p=>{const[a,b]=p.split(' ');
+    seg(a,b,(MODE.railColors[p]||'#E8291C').replace(/^#/, '#'),LW);});
+  MODE.face.forEach(p=>{const[a,b]=p.split(' '); seg(a,b,'rgba(34,197,94,.8)',LW*0.7);});
   POINT_KEYS.forEach(k=>{const p=g(k);if(!p)return;
     const sel=editable&&selChip===k;
     ctx.beginPath();ctx.arc(p.x,p.y,Math.max(W/(sel?60:110),sel?9:6),0,7);
@@ -538,6 +889,8 @@ cv2.addEventListener('pointerdown', e=>{
   if(calibMode==='corners'){
     if(corners.length<4){ corners.push(p); updateCalibHint(); drawCalib();
       if(corners.length===4) $('calibNext').disabled=false; }
+  }else if(calibMode==='lines'){
+    if(linePts.length<8){ linePts.push(p); updateCalibHint(); drawCalib(); }
   }else{
     // points 모드: 가장 가까운 점 선택 후 드래그
     const near=nearestPoint(p);
@@ -562,12 +915,18 @@ function nearestPoint(p){
 
 $('calibReset').onclick = ()=>{
   if(calibMode==='corners'){ corners=[]; updateCalibHint(); $('calibNext').disabled=true; drawCalib(); }
+  else if(calibMode==='lines'){ linePts=[]; corners=[]; updateCalibHint(); $('calibNext').disabled=true; drawCalib(); }
   else { selChip=null; renderChips(); drawCalib(); }
 };
 
 // 매트 완료 → 몸 포인트 자동 감지 후 편집 모드
 $('calibNext').onclick = async ()=>{
-  if(calibMode==='corners'){
+  if(calibMode==='corners' || calibMode==='lines'){
+    if(calibMode==='lines'){
+      const cs=cornersFromLines();
+      if(!cs || refQualityWarning(cs)) return;
+      corners=cs;
+    }
     if(corners.length!==4) return;
     load(true,'몸 포인트 감지 중…');
     await detectBodyOnFrame();
@@ -597,9 +956,39 @@ function renderChips(){
 
 /* 선택 프레임에서 MediaPipe로 몸 포인트 자동 감지 */
 async function detectBodyOnFrame(){
+  if(!initPose()){
+    bodyPts={};
+    showErr('자동 관절 감지를 쓸 수 없습니다',
+      '네트워크에서 MediaPipe 모듈을 받지 못했습니다. 점을 직접 찍어서 진행할 수 있습니다 — 아래 칩을 누르고 화면을 탭하세요.');
+    return;
+  }
   return new Promise(resolve=>{
     pose.onResults(res=>{
       bodyPts={};
+      if(res.poseLandmarks && MODE.plane==='sagittal'){
+        const L=res.poseLandmarks;
+        const vis=i=>(L[i]&&L[i].visibility!=null)?L[i].visibility:0;
+        // 측면 촬영에서는 카메라에 가까운 한쪽만 쓴다. 보이는 쪽을 자동으로 고른다.
+        const scoreL=vis(LM.sL)+vis(LM.hL)+vis(LM.kL)+vis(LM.aL)+vis(LM.earL);
+        const scoreR=vis(LM.sR)+vis(LM.hR)+vis(LM.kR)+vis(LM.aR)+vis(LM.earR);
+        const S = scoreR>=scoreL ? 'R' : 'L';
+        const put=(key,idx)=>{ const p=L[idx]; if(p) bodyPts[key]={nx:p.x,ny:p.y,moved:false}; };
+        put('ear',  LM['ear'+S]);
+        put('sh',   LM['s'+S]);
+        put('elb',  LM['elb'+S]);
+        put('wr',   LM['wr'+S]);
+        put('hip',  LM['h'+S]);
+        put('kn',   LM['k'+S]);
+        put('ank',  LM['a'+S]);
+        put('nose', LM.nose);
+        // 정수리: 귀에서 어깨 반대 방향으로 연장 (직접 랜드마크가 없어 추정 — 펜으로 보정)
+        const e=bodyPts.ear, sh=bodyPts.sh;
+        if(e&&sh){
+          const dx=e.nx-sh.nx, dy=e.ny-sh.ny, L2=Math.hypot(dx,dy)||1;
+          bodyPts.crown={nx:e.nx+dx/L2*L2*0.45, ny:e.ny+dy/L2*L2*0.45, moved:false};
+        }
+        resolve(); return;
+      }
       if(res.poseLandmarks){
         const L=res.poseLandmarks;
         // 실제 랜드마크가 있는 점만
@@ -623,7 +1012,10 @@ async function detectBodyOnFrame(){
   });
 }
 
-$('backTo2').onclick = ()=>go(2);
+$('backTo2').onclick = ()=>{
+  if(photoMode){ $('filePhoto').value=''; $('file').value=''; go(1); }
+  else go(2);
+};
 
 /* ── 보정 완료 → 현재 페이즈 저장 → 다음 or 결과 ── */
 $('runAnalyze').onclick = ()=>{
@@ -631,6 +1023,8 @@ $('runAnalyze').onclick = ()=>{
   const ph=PHASES[calibPhaseIdx];
   captured[ph].corners=JSON.parse(JSON.stringify(corners));
   captured[ph].bodyPts=JSON.parse(JSON.stringify(bodyPts));
+  captured[ph].ar=curAR();
+  captured[ph].plane=MODE.plane;
   captured[ph].metrics=computeMetrics();
 
   if(calibPhaseIdx < PHASES.length-1){
@@ -649,6 +1043,7 @@ $('runAnalyze').onclick = ()=>{
 
 // 기구 4점 없이 바로 몸 포인트 보정 (2번째·3번째 프레임용)
 async function enterCalibBody(){
+  updatePhotoBadge();
   calibMode='points';
   $('calibTitle').textContent=`${PHASE_LABEL[PHASES[calibPhaseIdx]]} — 몸 포인트 확인`;
   $('calibHint').className='hint ok';
@@ -669,11 +1064,12 @@ function updatePhaseUI(){
   const ph=curPhase();
   const badge=document.getElementById('phaseBadge');
   if(badge) badge.textContent = `프레임 ${phaseIdx+1}/3 · ${PHASE_LABEL[ph]}`;
-  const what={A:'시작(다리 편)', B:'목표(다리 구부린)', A2:'복귀(다리 편)'}[ph];
+  const what=MODE.phaseShort[ph];
   const w=document.getElementById('phaseWhat'); if(w) w.textContent=what;
   const btn=document.getElementById('toCalib');
   if(btn){
-    const next={A:'B(구부린) 찾기', B:"A′(복귀) 찾기", A2:'기구 4점 보정'}[ph];
+    const next={A:'B('+MODE.phaseShort.B+') 찾기', B:"A′ 찾기",
+      A2:(MODE.refMode==='lines'?'기준선 4개':'기준 4점')+' 보정'}[ph];
     btn.textContent = `이 프레임을 ${ph==='A2'?"A′":ph}로 확정 → ${next}`;
   }
   // STEP2 다시 오면(2·3번째 프레임) 현재 위치 프레임 다시 그리기
@@ -681,10 +1077,31 @@ function updatePhaseUI(){
 }
 
 /* 원근보정 (호모그래피) */
-function computeHomography(cs){
+// 보정 좌표계: x는 0~1, y는 0~AR (AR = 실측 세로/가로).
+// AR을 1로 두면 긴 쪽이 늘어나 각도가 실제보다 작게 나온다 — 그래서 실측을 받는다.
+function computeHomography(cs, ar){
+  const A = (ar==null? curAR() : ar) || 1;
   const src=cs.map(c=>[c.nx,c.ny]);
-  const dst=[[0,0],[1,0],[1,1],[0,1]];
+  const dst=[[0,0],[1,0],[1,A],[0,A]];
   return getPerspectiveTransform(src,dst);
+}
+
+/* ── 두 직선의 교점 (선 4개로 기준 사각형을 만들 때) ── */
+function lineIntersect(p1,p2,p3,p4){
+  const x1=p1.nx,y1=p1.ny,x2=p2.nx,y2=p2.ny,x3=p3.nx,y3=p3.ny,x4=p4.nx,y4=p4.ny;
+  const d=(x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);
+  if(Math.abs(d)<1e-9) return null;          // 평행 — 교점 없음
+  const a=x1*y2-y1*x2, b=x3*y4-y3*x4;
+  return { nx:(a*(x3-x4)-(x1-x2)*b)/d, ny:(a*(y3-y4)-(y1-y2)*b)/d };
+}
+/* 교점 4개를 [좌상, 우상, 우하, 좌하] 순서로 정렬 */
+function orderQuad(pts){
+  const cx=pts.reduce((a,p)=>a+p.nx,0)/4, cy=pts.reduce((a,p)=>a+p.ny,0)/4;
+  const sorted=pts.slice().sort((a,b)=>
+    Math.atan2(a.ny-cy,a.nx-cx)-Math.atan2(b.ny-cy,b.nx-cx));
+  let best=0, bv=Infinity;
+  sorted.forEach((p,i)=>{ const v=p.nx+p.ny; if(v<bv){bv=v;best=i;} });
+  return [0,1,2,3].map(i=>sorted[(best+i)%4]);
 }
 function getPerspectiveTransform(src,dst){
   const A=[],b=[];
@@ -709,7 +1126,8 @@ function applyH(H,nx,ny){
 }
 
 function computeMetrics(){
-  const H=computeHomography(corners);
+  if(MODE.plane==='sagittal') return computeMetricsSagittal(corners, curAR());
+  const H=computeHomography(corners, curAR());
   const c={};   // 보정된 몸 좌표 (정사각형 0~1)
   POINT_KEYS.forEach(k=>{ if(bodyPts[k]) c[k]=applyH(H,bodyPts[k].nx,bodyPts[k].ny); });
   const m={};
@@ -755,6 +1173,67 @@ function computeMetrics(){
     const am={x:(c.aL.x+c.aR.x)/2, y:(c.aL.y+c.aR.y)/2};
     m.legTilt=vtilt(hm,am);   // 주의: 위=골반, 아래=발목
     m.legDir=(m.legTilt>0?'골반이 오른쪽':'골반이 왼쪽');
+  }
+  // ── 무릎폭 비율 (관상면) ──
+  // 각도는 점 오차를 크게 증폭하지만, 가로 길이끼리의 비율은 둔감하다.
+  // 양 무릎이 "같이" 안으로 모이는 패턴은 kneeTilt로는 0°가 나와 못 잡는다.
+  if(c.kL&&c.kR&&c.aL&&c.aR){
+    const kw=Math.abs(c.kL.x-c.kR.x), aw=Math.abs(c.aL.x-c.aR.x);
+    if(aw>1e-4) m.kneeRatio = kw/aw*100;        // 100% = 무릎폭 = 발목폭
+  }
+  if(c.kL&&c.kR&&c.hL&&c.hR){
+    const kw=Math.abs(c.kL.x-c.kR.x), hw=Math.abs(c.hL.x-c.hR.x);
+    if(hw>1e-4) m.kneeHipRatio = kw/hw*100;
+  }
+  m._corrected=c;
+  return m;
+}
+
+/* ══ 시상면(측면) 지표 ══
+   측면에서는 좌우 대칭이 아니라 앞뒤 정렬을 본다.
+   facing = +1이면 화면 오른쪽을 보고 앉음. 모든 "앞" 방향을 이 부호로 맞춘다. */
+function computeMetricsSagittal(cs, ar){
+  const H=computeHomography(cs, ar);
+  const c={};
+  POINT_KEYS.forEach(k=>{ if(bodyPts[k]) c[k]=applyH(H,bodyPts[k].nx,bodyPts[k].ny); });
+  return sagMetricsFrom(c);
+}
+function sagMetricsFrom(c){
+  const m={};
+  // 바라보는 방향: 코가 귀보다 앞
+  let f=1;
+  if(c.nose&&c.ear) f = (c.nose.x>=c.ear.x)? 1 : -1;
+  else if(c.wr&&c.sh) f = (c.wr.x>=c.sh.x)? 1 : -1;
+  m._facing=f;
+
+  // 수직 기준 전방 편위각. + = 위쪽 점이 앞으로 나감
+  const fwdTilt=(top,bot)=>{
+    const dy=bot.y-top.y;
+    if(Math.abs(dy)<1e-6) return null;
+    return Math.atan2(f*(top.x-bot.x), dy)*180/Math.PI;
+  };
+  // 세 점이 이루는 각 (가운데가 꼭짓점). 180° = 완전히 폄
+  const ang3=(a,b,cc)=>{
+    if(!a||!b||!cc) return null;
+    const v1={x:a.x-b.x,y:a.y-b.y}, v2={x:cc.x-b.x,y:cc.y-b.y};
+    const n1=Math.hypot(v1.x,v1.y), n2=Math.hypot(v2.x,v2.y);
+    if(n1<1e-6||n2<1e-6) return null;
+    return Math.acos(Math.max(-1,Math.min(1,(v1.x*v2.x+v1.y*v2.y)/(n1*n2))))*180/Math.PI;
+  };
+
+  if(c.ear&&c.sh)  m.headFwd  = fwdTilt(c.ear, c.sh);    // 머리가 앞으로
+  if(c.sh&&c.hip)  m.trunkTilt= fwdTilt(c.sh, c.hip);    // 상체가 앞/뒤로
+  if(c.ear&&c.hip) m.axisTilt = fwdTilt(c.ear, c.hip);   // 귀–골반 전체 축
+  m.hipAngle   = ang3(c.sh,  c.hip, c.kn);
+  m.kneeFlex   = ang3(c.hip, c.kn,  c.ank);
+  m.elbowAngle = ang3(c.sh,  c.elb, c.wr);
+  // 귀–어깨–골반 일직선 이탈: 어깨가 귀–골반 선에서 벗어난 정도 (상체 길이 대비 %)
+  if(c.ear&&c.sh&&c.hip){
+    const dx=c.hip.x-c.ear.x, dy=c.hip.y-c.ear.y, L=Math.hypot(dx,dy);
+    if(L>1e-6){
+      const dist=Math.abs(dx*(c.ear.y-c.sh.y)-(c.ear.x-c.sh.x)*dy)/L;
+      m.stackDev = dist/L*100;
+    }
   }
   m._corrected=c;
   return m;
@@ -1076,28 +1555,36 @@ function renderMondrian(m){
 function drawPhaseInto(x, cap, bx, by, bw, bh, title){
   // 배경
   x.fillStyle='#0A0A0A'; x.fillRect(bx,by,bw,bh);
-  x.strokeStyle='rgba(245,158,11,.5)'; x.lineWidth=1; x.setLineDash([6,4]);
-  x.strokeRect(bx+bw*0.06,by+bh*0.03,bw*0.88,bh*0.94); x.setLineDash([]);
   if(!cap){ x.fillStyle='#666'; x.font='14px -apple-system'; x.textAlign='center';
     x.fillText('없음', bx+bw/2, by+bh/2); return; }
+  { const AR0=(cap.ar||curAR()||1);
+    const fb0=window.__fitBox || {x:0,y:0,w:1,h:AR0};
+    const sc0=Math.min(bw*0.90/fb0.w, bh*0.92/fb0.h);
+    x.strokeStyle='rgba(245,158,11,.35)'; x.lineWidth=1; x.setLineDash([6,4]);
+    x.strokeRect(bx+(bw-fb0.w*sc0)/2, by+(bh-fb0.h*sc0)/2, fb0.w*sc0, fb0.h*sc0); x.setLineDash([]); }
   // 보정 좌표 계산
-  const H=computeHomography(cap.corners);
+  const H=computeHomography(cap.corners, cap.ar);
   const c={};
   POINT_KEYS.forEach(k=>{ if(cap.bodyPts[k]) c[k]=applyH(H,cap.bodyPts[k].nx,cap.bodyPts[k].ny); });
-  const P=(k)=>c[k]?{x:bx+bw*0.06+c[k].x*bw*0.88, y:by+bh*0.03+c[k].y*bh*0.94}:null;
+  // 보정 공간은 1 : AR 비율이다. 그 비율 그대로 패널에 맞춰 넣는다.
+  const AR=(cap.ar||curAR()||1);
+  const fb=window.__fitBox || {x:0,y:0,w:1,h:AR};
+  const sc=Math.min(bw*0.90/fb.w, bh*0.92/fb.h);
+  const iw=fb.w*sc, ih=fb.h*sc;
+  const ix=bx+(bw-iw)/2, iy=by+(bh-ih)/2;
+  const P=(k)=>c[k]?{x:ix+(c[k].x-fb.x)*sc, y:iy+(c[k].y-fb.y)*sc}:null;
   const seg=(a,b,col,w)=>{const A=P(a),B=P(b);if(!A||!B)return;
     x.strokeStyle=col;x.lineWidth=w;x.lineCap='round';
     x.beginPath();x.moveTo(A.x,A.y);x.lineTo(B.x,B.y);x.stroke();};
   const LW=Math.max(bw/90,2);
-  // 중심 세로선 (기구축)
-  x.strokeStyle='rgba(34,197,94,.35)';x.lineWidth=1;
-  x.beginPath();x.moveTo(bx+bw/2,by);x.lineTo(bx+bw/2,by+bh);x.stroke();
-  seg('sL','sR','#E8291C',LW); seg('hL','hR','#E8291C',LW);
-  seg('kL','kR','#FF9500',LW); seg('aL','aR','#00CED1',LW); seg('toeL','toeR','#20B2AA',LW);
-  seg('sL','hL','rgba(255,255,255,.4)',LW*0.6);seg('sR','hR','rgba(255,255,255,.4)',LW*0.6);
-  seg('hL','kL','rgba(255,255,255,.4)',LW*0.6);seg('hR','kR','rgba(255,255,255,.4)',LW*0.6);
-  seg('kL','aL','rgba(255,255,255,.4)',LW*0.6);seg('kR','aR','rgba(255,255,255,.4)',LW*0.6);
-  seg('aL','toeL','rgba(255,255,255,.4)',LW*0.6);seg('aR','toeR','rgba(255,255,255,.4)',LW*0.6);
+  // 기준축 (관상면=세로 중심선, 시상면=수직 기준선)
+  { const ps=(MODE.plumb||[]).map(k=>P(k)).filter(Boolean);
+    const px = ps.length ? ps.reduce((a,p)=>a+p.x,0)/ps.length : bx+bw/2;
+    x.strokeStyle='rgba(34,197,94,.35)';x.lineWidth=1;
+    x.beginPath();x.moveTo(px,by);x.lineTo(px,by+bh);x.stroke(); }
+  MODE.bones.forEach(p=>{const[a,b]=p.split(' '); seg(a,b,'rgba(255,255,255,.4)',LW*0.6);});
+  MODE.face.forEach(p=>{const[a,b]=p.split(' '); seg(a,b,'rgba(34,197,94,.7)',LW*0.5);});
+  MODE.rails.forEach(p=>{const[a,b]=p.split(' '); seg(a,b,MODE.railColors[p]||'#E8291C',LW);});
   POINT_KEYS.forEach(k=>{const p=P(k);if(!p)return;
     x.beginPath();x.arc(p.x,p.y,LW*0.9,0,7);x.fillStyle='#fff';x.fill();});
   // 제목
@@ -1109,6 +1596,8 @@ function drawPhaseInto(x, cap, bx, by, bw, bh, title){
 function renderMotionResult(){
   const A=captured.A, B=captured.B, A2=captured.A2;
   // ── 1) A·B·A′ 나란히 ──
+  const _ta=$('toArt'); if(_ta) _ta.style.display = (MODE.plane==='sagittal')?'none':'block';
+  window.__fitBox = fitBoxOf([phaseCoords(captured.A),phaseCoords(captured.B),phaseCoords(captured.A2)], curAR());
   const cv=$('cvABA'), x=cv.getContext('2d');
   const CW=900, CH=560; cv.width=CW; cv.height=CH;
   x.fillStyle='#0A0A0A'; x.fillRect(0,0,CW,CH);
@@ -1125,19 +1614,22 @@ function renderMotionResult(){
   x2.beginPath();x2.moveTo(W2/2,0);x2.lineTo(W2/2,H2);x2.stroke();
   const drawOverlay=(c,col,dash)=>{
     if(!c)return;
-    const P=(k)=>c[k]?{x:W2*0.1+c[k].x*W2*0.8, y:H2*0.05+c[k].y*H2*0.9}:null;
+    const AR=(captured.A&&captured.A.ar)||curAR()||1;
+    const fb=window.__fitBox || {x:0,y:0,w:1,h:AR};
+    const sc=Math.min(W2*0.82/fb.w, H2*0.88/fb.h);
+    const ix=(W2-fb.w*sc)/2, iy=(H2-fb.h*sc)/2;
+    const P=(k)=>c[k]?{x:ix+(c[k].x-fb.x)*sc, y:iy+(c[k].y-fb.y)*sc}:null;
     const seg=(a,b,w)=>{const AA=P(a),BB=P(b);if(!AA||!BB)return;
       x2.strokeStyle=col;x2.lineWidth=w;x2.lineCap='round';x2.setLineDash(dash);
       x2.beginPath();x2.moveTo(AA.x,AA.y);x2.lineTo(BB.x,BB.y);x2.stroke();x2.setLineDash([]);};
-    ['sL sR','hL hR','kL kR','aL aR','toeL toeR','sL hL','sR hR','hL kL','hR kR','kL aL','kR aR','aL toeL','aR toeR']
-      .forEach(pair=>{const [a,b]=pair.split(' ');seg(a,b,4);});
+    MODE.rails.concat(MODE.bones).forEach(pair=>{const [a,b]=pair.split(' ');seg(a,b,4);});
     POINT_KEYS.forEach(k=>{const p=P(k);if(!p)return;
       x2.beginPath();x2.arc(p.x,p.y,4,0,7);x2.fillStyle=col;x2.fill();});
   };
   drawOverlay(cA,'rgba(34,197,94,.9)',[]);        // A = 초록 실선
   drawOverlay(cA2,'rgba(232,41,28,.85)',[10,7]);  // A′ = 빨강 점선
   x2.fillStyle='#22C55E';x2.font='700 20px -apple-system';x2.textAlign='left';
-  x2.fillText('● A (시작)', 20, 30);
+  x2.fillText('● A ('+MODE.phaseShort.A+')', 20, 30);
   x2.fillStyle='#E8291C';x2.fillText('▬ ▬ A′ (복귀)', 20, 56);
 
   // ── 3) 지표 ──
@@ -1148,18 +1640,16 @@ function renderMotionResult(){
   const addDiff=(l,k,thr)=>{ const d=diff(k); if(d==null)return;
     cards.push({l:l+' 변화', v:`${d>0?'+':''}${d.toFixed(1)}°`, bad:Math.abs(d)>thr,
       sub:`A ${(mA[k]||0).toFixed(1)}° → A′ ${(mA2[k]||0).toFixed(1)}°`}); };
-  addDiff('어깨',   'shoulderTilt',2);
-  addDiff('골반',   'pelvisTilt',2);
-  addDiff('무릎',   'kneeTilt',2);
-  addDiff('발',     'toeTilt',2);
-  addDiff('몸통축', 'centerTilt',3);
+  MODE.cols.forEach(([lab,k,thr])=>addDiff(lab,k,thr));
+  if(MODE.plane==='sagittal'){ addDiff('귀–골반축','axisTilt',3); }
+  else { addDiff('몸통축','centerTilt',3); }
   let html='';
   cards.forEach(c=>{ html+=`<div class="res ${c.bad?'warn':'ok'}"><div class="l">${c.l}</div>
     <div class="v">${c.v}</div><div class="sub">${c.sub}</div></div>`; });
   $('resGrid').innerHTML=html;
-  $('resNote').innerHTML='<b>A → B → A′ 동작 분석</b> · Footwork Parallel Arches<br>' +
-    'A(시작)와 A′(복귀)의 정렬 차이가 작을수록 동작이 몸을 틀지 않고 제대로 수행된 것입니다. ' +
-    '차이가 크면(빨강) 그 부위가 동작 중 무너졌다는 신호입니다. 변화 추이 확인용.';
+  $('resNote').innerHTML='<b>A → B → A′ 동작 분석</b> · '+MODE.title+' · '+MODE.planeKo+'<br>' +
+    'A(시작)와 A′(복귀)의 차이가 작을수록 동작이 몸을 틀지 않고 제자리로 돌아온 것입니다. ' +
+    '측정 오차가 ±3° 안팎이라 그보다 작은 차이는 변화로 읽지 마세요. 변화 추이 확인용.';
 
   // 저장용 통합 캔버스 준비
   window.__motionCanvases=[cv,cv2];
@@ -1171,7 +1661,7 @@ let animState={raf:null, t:0, playing:false, loop:false, coords:null};
 // 한 페이즈의 보정 좌표(0~1) 반환
 function phaseCoords(cap){
   if(!cap||!cap.corners||!cap.bodyPts) return null;
-  const H=computeHomography(cap.corners); const c={};
+  const H=computeHomography(cap.corners, cap.ar); const c={};
   POINT_KEYS.forEach(k=>{ if(cap.bodyPts[k]) c[k]=applyH(H,cap.bodyPts[k].nx,cap.bodyPts[k].ny); });
   return c;
 }
@@ -1610,6 +2100,33 @@ function pelvisDeviation(){
   return ang;
 }
 
+/* 시상면 hero: A→B에서 상체가 앞뒤로 얼마나 밀렸나 (팔만으로 당겼는가) */
+function trunkShift(){
+  const mA=(captured.A&&captured.A.metrics)||{}, mB=(captured.B&&captured.B.metrics)||{};
+  if(mA.trunkTilt==null||mB.trunkTilt==null) return null;
+  return Math.abs(mB.trunkTilt-mA.trunkTilt);
+}
+function heroValue(){
+  return MODE.hero.fn==='trunk' ? trunkShift() : pelvisDeviation();
+}
+
+/* ── 표시 규칙 ──
+   관절점 1cm 오차가 무릎 각도에서는 약 3°로 증폭된다.
+   그 위에 0.1° 단위를 인쇄하면 노이즈를 유효숫자로 파는 것이 되므로
+   결과지에서는 정수로만 쓰고, 해석은 구간으로 준다. */
+function fmtDeg(v, kind){
+  if(v==null) return '—';
+  if(kind==='pct') return Math.round(v)+'%';
+  const r=Math.round(v);
+  return (kind==='abs') ? (r+'°') : ((r>0?'+':'')+r+'°');
+}
+function bandOf(d, thr){
+  const a=Math.abs(d);
+  if(a<=thr)     return {t:'유지',      bad:false};
+  if(a<=thr*2.5) return {t:'약간 이탈', bad:false};
+  return               {t:'뚜렷한 이탈',bad:true};
+}
+
 function sheetData(){
   const g=id=>{const e=$(id); return e? (e.value||'').trim() : '';};
   return {
@@ -1629,7 +2146,9 @@ function sheetData(){
     mA: (captured.A&&captured.A.metrics)||{},
     mB: (captured.B&&captured.B.metrics)||{},
     mA2:(captured.A2&&captured.A2.metrics)||{},
-    dev: pelvisDeviation(),
+    dev: heroValue(),
+    mode: MODE,
+    ar: (captured.A&&captured.A.ar)||curAR(),
     art: sheetState.artPhase,
     photo: sheetState.photo,
     rawA: captured.A, rawB: captured.B, rawA2: captured.A2
@@ -1643,18 +2162,30 @@ function drawSkelPrint(x, c, bx, by, bw, bh, opt){
   const col=opt.color||SH.ink, dash=opt.dash||[], lw=opt.lw||0.55;
   // 보정 좌표는 매트를 정사각(0~1)으로 편 공간이다. 각도도 이 공간에서 계산되므로
   // 패널 비율에 맞춰 늘이면 그림과 숫자가 어긋난다 → 항상 정사각으로 맞춰 그린다.
-  const side=Math.min(bw*0.88, bh*0.94);
-  const ix=bx+(bw-side)/2, iy=by+(bh-side)/2, iw=side, ih=side;
-  const P=k=>c[k]?{x:ix+c[k].x*iw, y:iy+c[k].y*ih}:null;
+  const AR=(opt.ar||curAR()||1);
+  const fb=opt.fit || {x:0,y:0,w:1,h:AR};
+  const sc=Math.min(bw*0.92/fb.w, bh*0.94/fb.h);
+  const iw=fb.w*sc, ih=fb.h*sc;
+  const ix=bx+(bw-iw)/2, iy=by+(bh-ih)/2;
+  const P=k=>c[k]?{x:ix+(c[k].x-fb.x)*sc, y:iy+(c[k].y-fb.y)*sc}:null;
   const seg=(a,b,w)=>{const A=P(a),B=P(b); if(!A||!B)return;
     x.strokeStyle=col; x.lineWidth=w; x.lineCap='round'; x.setLineDash(dash);
     x.beginPath(); x.moveTo(A.x,A.y); x.lineTo(B.x,B.y); x.stroke(); x.setLineDash([]);};
   // 사지 (가는 선)
-  ['sL hL','sR hR','hL kL','hR kR','kL aL','kR aR','aL toeL','aR toeR']
-    .forEach(p=>{const[a,b]=p.split(' '); seg(a,b,lw*0.62);});
-  // 좌우 정렬선 (굵은 선 — 이게 핵심 정보)
-  ['sL sR','hL hR','kL kR','aL aR','toeL toeR']
-    .forEach(p=>{const[a,b]=p.split(' '); seg(a,b,lw*1.5);});
+  MODE.bones.forEach(p=>{const[a,b]=p.split(' '); seg(a,b,lw*0.62);});
+  // 머리 방향 (가는 선) — 어느 쪽을 보고 있는지 종이에서도 보이게
+  MODE.face.forEach(p=>{const[a,b]=p.split(' '); seg(a,b,lw*0.5);});
+  // 핵심 정렬선 (굵은 선)
+  MODE.rails.forEach(p=>{const[a,b]=p.split(' '); seg(a,b,lw*1.5);});
+  // 기준 수직선 — 골반을 지나는 연직선. A·B·A′ 모두 같은 자리에 선다.
+  if(opt.plumb!==false && MODE.plumb){
+    const ps=MODE.plumb.map(k=>P(k)).filter(Boolean);
+    if(ps.length){
+      const px=ps.reduce((a,p)=>a+p.x,0)/ps.length;
+      x.strokeStyle='rgba(140,111,53,.55)'; x.lineWidth=lw*0.4; x.setLineDash([1.2,1.0]);
+      x.beginPath(); x.moveTo(px,by+1); x.lineTo(px,by+bh-1); x.stroke(); x.setLineDash([]);
+    }
+  }
   // 관절점
   if(opt.dots!==false){
     POINT_KEYS.forEach(k=>{const p=P(k); if(!p)return;
@@ -1662,6 +2193,18 @@ function drawSkelPrint(x, c, bx, by, bw, bh, opt){
   }
 }
 
+let _sheetAR=1, _sheetFit=null;
+/* A·B·A′가 같은 틀 안에서 비교되도록 세 자세를 합친 바운딩 박스를 한 번만 구한다.
+   양축을 같은 배율로 키우므로 각도는 그대로다. */
+function fitBoxOf(sets, ar){
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  (sets||[]).forEach(c=>{ if(!c) return;
+    POINT_KEYS.forEach(k=>{ const p=c[k]; if(!p) return;
+      if(p.x<x0)x0=p.x; if(p.x>x1)x1=p.x; if(p.y<y0)y0=p.y; if(p.y>y1)y1=p.y; }); });
+  if(!isFinite(x0)) return {x:0, y:0, w:1, h:(ar||1)};
+  const pad=0.10*Math.max(x1-x0, y1-y0, 0.02);
+  return {x:x0-pad, y:y0-pad, w:(x1-x0)+pad*2, h:(y1-y0)+pad*2};
+}
 function panelCaption(x, bx, bw, ph, by, title, sub){
   x.textAlign='center'; x.fillStyle=SH.red; KF(x,700,2.7);
   x.fillText(title, bx+bw/2, by+ph+3.2);
@@ -1670,16 +2213,14 @@ function panelCaption(x, bx, bw, ph, by, title, sub){
 function skelPanel(x, c, bx, by, bw, bh, title, sub){
   const ph=bh-7;
   x.strokeStyle=SH.ink18; x.lineWidth=0.25; x.strokeRect(bx,by,bw,ph);
-  line(x, bx+bw/2, by+1, bx+bw/2, by+ph-1, 'rgba(140,111,53,.45)', 0.2);
-  drawSkelPrint(x, c, bx, by, bw, ph, {color:SH.ink, lw:0.5});
+  drawSkelPrint(x, c, bx, by, bw, ph, {color:SH.ink, lw:0.5, ar:_sheetAR, fit:_sheetFit});
   panelCaption(x,bx,bw,ph,by,title,sub);
 }
 function overlapPanel(x, o, bx, by, bw, bh){
   const ph=bh-7;
   x.strokeStyle=SH.ink18; x.lineWidth=0.25; x.strokeRect(bx,by,bw,ph);
-  line(x, bx+bw/2, by+1, bx+bw/2, by+ph-1, 'rgba(140,111,53,.45)', 0.2);
-  drawSkelPrint(x, o.cA,  bx, by, bw, ph, {color:SH.ink35, lw:0.5, dots:false});
-  drawSkelPrint(x, o.cA2, bx, by, bw, ph, {color:SH.red,   lw:0.5, dash:[1.4,1.0]});
+  drawSkelPrint(x, o.cA,  bx, by, bw, ph, {color:SH.ink35, lw:0.5, dots:false, ar:o.ar, fit:_sheetFit});
+  drawSkelPrint(x, o.cA2, bx, by, bw, ph, {color:SH.red, lw:0.5, dash:[1.4,1.0], ar:o.ar, fit:_sheetFit, plumb:false});
   panelCaption(x,bx,bw,ph,by,"A vs A\u2032 \uacb9\uce68",'\ud68c\uc0c9 A \u00b7 \ubd89\uc740 \uc810\uc120 A\u2032');
 }
 
@@ -1732,10 +2273,8 @@ function photoPanel(x, cap, bx, by, bw, bh, title, sub){
     const seg=(a,b,col,w)=>{ const A=P(a),C=P(b); if(!A||!C)return;
       x.strokeStyle=col; x.lineWidth=w; x.lineCap='round';
       x.beginPath(); x.moveTo(A.x,A.y); x.lineTo(C.x,C.y); x.stroke(); };
-    ['sL hL','sR hR','hL kL','hR kR','kL aL','kR aR','aL toeL','aR toeR']
-      .forEach(p=>{const[a,b]=p.split(' '); seg(a,b,'rgba(255,255,255,.9)',0.45);});
-    ['sL sR','hL hR','kL kR','aL aR','toeL toeR']
-      .forEach(p=>{const[a,b]=p.split(' '); seg(a,b,SH.red,0.6);});
+    MODE.bones.forEach(p=>{const[a,b]=p.split(' '); seg(a,b,'rgba(255,255,255,.9)',0.45);});
+    MODE.rails.forEach(p=>{const[a,b]=p.split(' '); seg(a,b,SH.red,0.6);});
     POINT_KEYS.forEach(k=>{ const p=P(k); if(!p)return;
       x.beginPath(); x.arc(p.x,p.y,0.55,0,7); x.fillStyle='#fff'; x.fill();
       x.strokeStyle=SH.ink; x.lineWidth=0.15; x.stroke(); });
@@ -1745,13 +2284,53 @@ function photoPanel(x, cap, bx, by, bw, bh, title, sub){
 }
 
 /* ── 몬드리안 (임의 사각형에) ── */
+/* 시상면 몬드리안 — 몸의 수직 적층(귀·어깨·골반·무릎·발목)을 가로 띠로,
+   귀–골반을 잇는 실제 축을 사선으로 관통시킨다. */
+function drawMondrianSag(x, c, fx, fy, fw, fh, bg){
+  if(!c||!c.sh||!c.hip){
+    x.fillStyle=SH.ink55; KF(x,700,4); x.textAlign='center';
+    x.fillText('데이터 부족 — 어깨·골반 필요', fx+fw/2, fy+fh/2); return;
+  }
+  const AR=_sheetAR||1;
+  const T=(p)=>({x:fx+p.x*fw, y:fy+(p.y/AR)*fh});
+  const stack=['crown','ear','sh','elb','hip','kn','ank'].filter(k=>c[k]).map(k=>T(c[k]));
+  const ys=stack.map(p=>p.y).sort((a,b)=>a-b);
+  const edges=[fy].concat(ys).concat([fy+fh]);
+  const FILL=[SH.cream, SH.red, null, SH.blue, null, SH.gold, SH.cream, null];
+  // 축: 귀(또는 정수리) → 골반
+  const top=T(c.ear||c.crown||c.sh), bot=T(c.hip);
+  const vsl=(bot.x-top.x)/((bot.y-top.y)||1e-6);
+  const xAtY=yy=>top.x+vsl*(yy-top.y);
+  for(let i=0;i<edges.length-1;i++){
+    const y0=edges[i], y1=edges[i+1];
+    if(y1-y0<0.6) continue;
+    const f=FILL[i%FILL.length];
+    const xa=xAtY(y0), xb=xAtY(y1);
+    if(f){ x.fillStyle=f; x.beginPath();
+      x.moveTo(fx,y0); x.lineTo(xa,y0); x.lineTo(xb,y1); x.lineTo(fx,y1);
+      x.closePath(); x.fill(); }
+    const f2=FILL[(i+3)%FILL.length];
+    if(f2 && f2!==f){ x.fillStyle=f2; x.beginPath();
+      x.moveTo(xa,y0); x.lineTo(fx+fw,y0); x.lineTo(fx+fw,y1); x.lineTo(xb,y1);
+      x.closePath(); x.fill(); }
+    x.strokeStyle=SH.ink; x.lineWidth=0.5;
+    x.beginPath(); x.moveTo(fx,y1); x.lineTo(fx+fw,y1); x.stroke();
+  }
+  // 몸의 실제 축 (굵은 선)
+  x.strokeStyle=SH.ink; x.lineWidth=1.3; x.lineCap='butt';
+  x.beginPath(); x.moveTo(xAtY(fy),fy); x.lineTo(xAtY(fy+fh),fy+fh); x.stroke();
+  x.strokeStyle=SH.ink; x.lineWidth=0.9; x.strokeRect(fx,fy,fw,fh);
+}
+
 function drawMondrianInto(x, c, fx, fy, fw, fh, bg){
+  if(MODE.plane==='sagittal') return drawMondrianSag(x, c, fx, fy, fw, fh, bg);
   if(!c||!c.sL||!c.sR||!c.hL||!c.hR){
     x.fillStyle=SH.ink55; KF(x,700,4); x.textAlign='center';
     x.fillText('데이터 부족 — 어깨·골반 필요', fx+fw/2, fy+fh/2); return;
   }
   const CR = bg? SH.cream : null;
-  const T=(nx,ny)=>({x:fx+nx*fw, y:fy+ny*fh});
+  const _ar=_sheetAR||1;
+  const T=(nx,ny)=>({x:fx+nx*fw, y:fy+(ny/_ar)*fh});
   const has=k=>c[k]!=null;
   const mid=(a,b)=>a&&b?{x:(a.x+b.x)/2,y:(a.y+b.y)/2}:null;
   const yWall=(k,side)=>{ const a=c[k[0]],b=c[k[1]]; if(!a||!b) return null;
@@ -1802,7 +2381,7 @@ function drawCover(x,o){
   x.fillStyle=SH.ink; x.textAlign='left'; KF(x,900,11.5);
   x.fillText('AXIS', M, 26);
   x.fillStyle=SH.red; GF(x,700,3.3); x.fillText('MOTION MEASUREMENT', M+30, 21.6);
-  x.fillStyle=SH.gold; KF(x,500,2.7); x.fillText('Footwork · Parallel Arches', M+30, 26);
+  x.fillStyle=SH.gold; KF(x,500,2.7); x.fillText(o.mode.title, M+30, 26);
   line(x, M, 31, SH.W-M, 31, SH.ink18, 0.3);
 
   const c = o.art==='B'? o.cB : o.art==='A2'? o.cA2 : o.cA;
@@ -1827,34 +2406,35 @@ function drawInner1(x,o){
   x.textAlign='right'; x.fillStyle=SH.ink55; GF(x,500,2.9); x.fillText(o.date, SH.W-M, 16);
   line(x, M, 19.5, SH.W-M, 19.5, SH.ink, 0.5);
   x.textAlign='left'; x.fillStyle=SH.red; GF(x,700,2.5);
-  x.fillText('FOOTWORK · PARALLEL ARCHES', M, 25);
+  x.fillText(o.mode.sheetTitle, M, 25);
   if(o.instructor){ x.textAlign='right'; x.fillStyle=SH.ink55; KF(x,400,2.4);
     x.fillText('측정 '+o.instructor, SH.W-M, 25); }
 
   const gap=2.2, pw=(IW-gap*2)/3;
   const cx=i=>M+(pw+gap)*i;
-  const PHASES3=[['A · 시작', o.rawA, o.cA], ['B · 목표', o.rawB, o.cB], ['A′ · 복귀', o.rawA2, o.cA2]];
+  const PC=o.mode.phaseCap;
+  const PHASES3=[[PC.A, o.rawA, o.cA], [PC.B, o.rawB, o.cB], [PC.A2, o.rawA2, o.cA2]];
 
   if(o.photo==='none'){
     // 사진 없이 — 도식 3분할 (겹침 포함)
     x.textAlign='left'; x.fillStyle=SH.gold; KF(x,700,2.5);
     x.fillText('정렬 도식', M, 31);
-    skelPanel(x, o.cA, cx(0), 35, pw, 84, 'A · 시작', '다리 편 상태');
-    skelPanel(x, o.cB, cx(1), 35, pw, 84, 'B · 목표', '다리 구부린 상태');
+    skelPanel(x, o.cA, cx(0), 35, pw, 84, PC.A, o.mode.phaseSub.A);
+    skelPanel(x, o.cB, cx(1), 35, pw, 84, PC.B, o.mode.phaseSub.B);
     overlapPanel(x, o,  cx(2), 35, pw, 84);
   }else{
     // ① 측정 원본 사진 + 강사 보정점
     x.textAlign='left'; x.fillStyle=SH.gold; KF(x,700,2.5);
     x.fillText('측정 원본 · 강사 보정점', M, 31);
     x.textAlign='right'; x.fillStyle=SH.ink35; KF(x,400,2.1);
-    x.fillText('금색 점선 = 매트 4점', SH.W-M, 31);
+    x.fillText('금색 점선 = 기준 4점', SH.W-M, 31);
     PHASES3.forEach(([lab,cap],i)=> photoPanel(x, cap, cx(i), 34, pw, 54, lab, ''));
 
     // ② 정렬 도식
     x.textAlign='left'; x.fillStyle=SH.gold; KF(x,700,2.5);
     x.fillText('정렬 도식', M, 92);
     x.textAlign='right'; x.fillStyle=SH.ink35; KF(x,400,2.1);
-    x.fillText('원근보정 후 · 각도 계산과 동일한 좌표', SH.W-M, 92);
+    x.fillText('원근보정 후 · 각도 계산과 동일한 좌표 (실측 '+REF_W+'×'+REF_H+'cm)', SH.W-M, 92);
     PHASES3.forEach(([lab,,c],i)=> skelPanel(x, c, cx(i), 95, pw, 47, lab, ''));
   }
 
@@ -1862,24 +2442,28 @@ function drawInner1(x,o){
   let y = (o.photo==='none') ? 128 : 146;
   x.strokeStyle=SH.ink; x.lineWidth=0.4; x.strokeRect(M, y, IW, 9.5);
   x.textAlign='left'; x.fillStyle=SH.gold; KF(x,700,2.6);
-  x.fillText('골반 수직 이탈각 (A → B)', M+4, y+6);
+  x.fillText(o.mode.hero.label, M+4, y+6);
   x.fillStyle=SH.ink35; KF(x,400,2.1);
-  x.fillText('5° 이내 = 수직 운동 유지', M+52, y+6);
+  x.fillText(o.mode.hero.hint, M+52, y+6);
   x.textAlign='right';
   if(o.dev==null){ x.fillStyle=SH.ink35; KF(x,900,6); x.fillText('—', SH.W-M-4, y+7); }
-  else{ x.fillStyle=o.dev>5?SH.red:SH.ink; KF(x,900,6.6);
-        x.fillText(o.dev.toFixed(1)+'°', SH.W-M-4, y+7.2); }
+  else{
+    const hb=bandOf(o.dev, o.mode.hero.thr);
+    x.fillStyle=hb.bad?SH.red:SH.ink; KF(x,900,6.6);
+    x.fillText(Math.round(o.dev)+'°', SH.W-M-4, y+7.2);
+    x.fillStyle=hb.bad?SH.red:SH.ink55; KF(x,600,2.4);
+    x.fillText(hb.t, SH.W-M-16, y+6.6);
+  }
 
   // ── 각도 측정값 (A · B · A′ + 변화) ──
   y = (o.photo==='none') ? 145 : 161;
   x.textAlign='left'; x.fillStyle=SH.gold; KF(x,700,2.7);
   x.fillText('각도 측정값', M, y);
   x.textAlign='right'; x.fillStyle=SH.ink35; KF(x,400,2.1);
-  x.fillText('수평 · 수직 기준 °', SH.W-M, y);
+  x.fillText(o.mode.plane==='sagittal'?'수직 기준 ° · 관절각 °':'수평 기준 ° · 폭 비율 %', SH.W-M, y);
   y+=2.6; line(x, M, y, SH.W-M, y, SH.ink, 0.4);
 
-  const cols=[['어깨','shoulderTilt',2],['골반','pelvisTilt',2],['무릎','kneeTilt',2],
-              ['발','toeTilt',2],['몸통축','centerTilt',3]];
+  const cols=o.mode.cols;
   const labW=17, cw2=(IW-labW)/cols.length;
   const colR=i=>M+labW+cw2*(i+1);
   cols.forEach(([l],i)=>{ x.textAlign='right'; x.fillStyle=SH.ink55; KF(x,500,2.3);
@@ -1888,31 +2472,33 @@ function drawInner1(x,o){
     const ry=y+9.8+r*4.4;
     line(x, M, ry-3.1, SH.W-M, ry-3.1, SH.ink18, 0.15);
     x.textAlign='left'; x.fillStyle=SH.ink55; GF(x,600,2.4); x.fillText(row[0], M, ry);
-    cols.forEach(([,k],i)=>{ const v=row[1][k];
+    cols.forEach(([,k,,kind],i)=>{ const v=row[1][k];
       x.textAlign='right'; x.fillStyle=v==null?SH.ink35:SH.ink; GF(x,500,2.5);
-      x.fillText(v==null?'—':((v>0?'+':'')+v.toFixed(1)), colR(i), ry); });
+      x.fillText(fmtDeg(v, kind).replace('°',''), colR(i), ry); });
   });
   // 변화 행 (강조)
   const dy=y+25.5;
   line(x, M, dy-6, SH.W-M, dy-6, SH.ink, 0.5);
   x.textAlign='left'; x.fillStyle=SH.red; KF(x,900,2.7); x.fillText('A → A′', M, dy);
   x.fillStyle=SH.ink35; KF(x,400,2.0); x.fillText('돌아온 정도', M, dy+3.4);
-  cols.forEach(([,k,thr],i)=>{
+  cols.forEach(([,k,thr,kind],i)=>{
     const a=o.mA[k], a2=o.mA2[k];
     x.textAlign='right';
     if(a==null||a2==null){ x.fillStyle=SH.ink35; KF(x,900,4.6); x.fillText('—', colR(i), dy+1); return; }
-    const d=a2-a, bad=Math.abs(d)>thr;
-    x.fillStyle=bad?SH.red:SH.ink; KF(x,900,4.8);
-    x.fillText((d>0?'+':'')+d.toFixed(1)+'°', colR(i), dy+1);
-    if(bad) line(x, colR(i)-cw2*0.62, dy+2.6, colR(i), dy+2.6, SH.red, 0.5);
+    const d=a2-a, bd=bandOf(d, thr);
+    x.fillStyle=bd.bad?SH.red:SH.ink; KF(x,900,4.8);
+    x.fillText((d>0?'+':'')+Math.round(d)+(kind==='pct'?'%p':'°'), colR(i), dy+1);
+    x.fillStyle=bd.bad?SH.red:SH.ink35; KF(x,500,2.0);
+    x.fillText(bd.t, colR(i), dy+4.2);
+    if(bd.bad) line(x, colR(i)-cw2*0.62, dy+2.3, colR(i), dy+2.3, SH.red, 0.5);
   });
   x.textAlign='left'; x.fillStyle=SH.ink35; KF(x,400,2.1);
-  x.fillText('0에 가까울수록 동작이 몸을 틀지 않고 제자리로 돌아왔다는 뜻 · 밑줄 = 기준 초과', M+22, dy+3.4);
+  x.fillText('0에 가까울수록 몸을 틀지 않고 제자리로 돌아왔다는 뜻', M, dy+8);
 
   // 푸터
   line(x, M, 199, SH.W-M, 199, SH.ink18, 0.3);
   x.textAlign='left'; x.fillStyle=SH.ink35; KF(x,400,2.1);
-  x.fillText('매트 4점 원근보정 적용 · 변화 추이 확인용이며 의학적 진단이 아닙니다', M, 203.5);
+  x.fillText('기준 4점 원근보정 · 측정 오차 ±3° 안팎이라 정수로 표기합니다 · 변화 추이 확인용이며 의학적 진단이 아닙니다', M, 203.5);
   x.textAlign='right'; GF(x,500,2.1); x.fillText('AXIS', SH.W-M, 203.5);
 }
 
@@ -2018,6 +2604,8 @@ function renderFace(which, PPM, cv, o){
   cv.width=Math.round(SH.W*PPM); cv.height=Math.round(SH.H*PPM);
   const x=cv.getContext('2d');
   x.setTransform(PPM,0,0,PPM,0,0);
+  _sheetAR = o.ar || 1;
+  _sheetFit = fitBoxOf([o.cA,o.cB,o.cA2], _sheetAR);
   x.fillStyle = o.bg? SH.cream : '#FFFFFF';
   x.fillRect(0,0,SH.W,SH.H);
   SHEET_FACES[which](x,o);
@@ -2086,6 +2674,24 @@ $('segBg').querySelectorAll('button').forEach(b=>{
   b.onclick=()=>{ $('segBg').querySelectorAll('button').forEach(o=>o.classList.remove('on'));
     b.classList.add('on'); sheetState.bg = b.dataset.b==='1'; renderSheetPreview(); };
 });
+/* ── 프리셋 선택 · 실측 입력 ── */
+$('segPreset').querySelectorAll('button').forEach(b=>{
+  b.onclick=()=>{
+    $('segPreset').querySelectorAll('button').forEach(o=>o.classList.remove('on'));
+    b.classList.add('on');
+    applyPreset(b.dataset.k);
+  };
+});
+const syncDims=()=>{
+  const w=parseFloat($('dimW').value), h=parseFloat($('dimH').value);
+  if(w>0) REF_W=w;
+  if(h>0) REF_H=h;
+};
+$('dimW').addEventListener('input', syncDims);
+$('dimH').addEventListener('input', syncDims);
+
+applyPreset('footwork');
+
 $('toSheet').onclick=async()=>{ go(6); await renderSheetPreview(); };
 $('sheetBack').onclick=()=>go(4);
 $('sheetPreview').onclick=()=>renderSheetPreview();
